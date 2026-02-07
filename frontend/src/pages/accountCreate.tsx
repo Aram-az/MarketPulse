@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../theme/ThemeContext";
 
@@ -6,7 +6,12 @@ type Lang = "en" | "fr";
 
 export default function AccountCreate() {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme(); // app-wide theme
+  const { setTheme } = useTheme(); // keep context, but no toggle button
+
+  // Force dark mode for this page (and it will persist via ThemeContext localStorage)
+  useEffect(() => {
+    setTheme("dark");
+  }, [setTheme]);
 
   const [lang, setLang] = useState<Lang>("en");
 
@@ -29,11 +34,7 @@ export default function AccountCreate() {
       hide: "Hide",
       create: "Create account",
       backToLogin: "Back to sign in",
-      helperPw:
-        "At least 8 characters (use a mix of letters, numbers, and symbols).",
-      theme: "Theme",
-      light: "Light",
-      dark: "Dark",
+      helperPw: "At least 8 characters (use a mix of letters, numbers, and symbols).",
     };
 
     const fr = {
@@ -48,33 +49,25 @@ export default function AccountCreate() {
       hide: "Masquer",
       create: "Créer le compte",
       backToLogin: "Retour à la connexion",
-      helperPw:
-        "Au moins 8 caractères (mélangez lettres, chiffres et symboles).",
-      theme: "Thème",
-      light: "Clair",
-      dark: "Sombre",
+      helperPw: "Au moins 8 caractères (mélangez lettres, chiffres et symboles).",
     };
 
     return lang === "en" ? en : fr;
   }, [lang]);
 
   const inputClass =
-    "mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black outline-none " +
-    "placeholder:text-black/40 focus:border-[#DC143C]/50 focus:shadow-[0_0_0_3px_rgba(220,20,60,0.12)] " +
-    "dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 " +
+    "mt-2 w-full rounded-xl border border-black/10 bg-black px-4 py-3 text-sm text-white outline-none " +
+    "placeholder:text-white/40 focus:border-[#DC143C]/50 focus:shadow-[0_0_0_3px_rgba(220,20,60,0.12)] " +
+    "dark:border-white/10 dark:bg-black dark:text-white dark:placeholder:text-white/40 " +
     "dark:focus:shadow-[0_0_0_3px_rgba(255,45,166,0.18)]";
 
   return (
-    <section
-      className="min-h-screen bg-[#f7f7f8] text-black dark:bg-[#0b0f14] dark:text-white"
-      lang={lang}
-    >
+    <section className="min-h-screen bg-[#0b0f14] text-white" lang={lang}>
       <div className="mx-auto flex min-h-screen max-w-[1400px] items-center justify-center px-6 py-12">
-        <div className="w-full max-w-xl rounded-xl bg-white px-8 py-10 shadow-sm ring-1 ring-black/10 dark:bg-white/5 dark:ring-white/10">
+        <div className="w-full max-w-xl rounded-xl bg-black px-8 py-10 shadow-sm ring-1 ring-black/10 dark:ring-white/10">
           {/* Header */}
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-center gap-3">
-              {/* Logo pill (single box) */}
               <div className="h-10 w-28 overflow-hidden rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-[#c1c1c1]">
                 <img
                   src="/nb-logo.png"
@@ -84,32 +77,18 @@ export default function AccountCreate() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => setLang((v) => (v === "en" ? "fr" : "en"))}
-                className="cursor-pointer text-sm text-sky-700 underline underline-offset-2 hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200"
-              >
-                {t.languageToggle}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-black/80 hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
-                title="Toggle theme"
-              >
-                {t.theme}: {theme === "dark" ? t.dark : t.light}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setLang((v) => (v === "en" ? "fr" : "en"))}
+              className="cursor-pointer text-sm text-sky-300 underline underline-offset-2 hover:text-sky-200"
+            >
+              {t.languageToggle}
+            </button>
           </div>
 
           <h1 className="mt-8 text-3xl font-semibold">{t.title}</h1>
-          <p className="mt-2 text-sm text-black/60 dark:text-white/60">
-            {t.subtitle}
-          </p>
+          <p className="mt-2 text-sm text-white/60">{t.subtitle}</p>
 
-          {/* Form */}
           <form
             className="mt-8 space-y-5"
             onSubmit={(e) => {
@@ -193,25 +172,21 @@ export default function AccountCreate() {
                   required
                   minLength={8}
                   maxLength={128}
-                  className={
-                    inputClass.replace("mt-2 ", "").replace("pr-16", "") + " pr-16"
-                  }
+                  className={inputClass.replace("mt-2 ", "") + " pr-16"}
                 />
 
                 <button
                   type="button"
                   aria-pressed={showPw}
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-black/60 hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/10"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-white/60 hover:bg-white/10"
                   title={showPw ? t.hide : t.show}
                 >
                   <span className="text-xs">{showPw ? t.hide : t.show}</span>
                 </button>
               </div>
 
-              <div className="mt-2 text-xs text-black/55 dark:text-white/55">
-                {t.helperPw}
-              </div>
+              <div className="mt-2 text-xs text-white/55">{t.helperPw}</div>
             </div>
 
             <button type="submit" className="btn-futuristic-red w-full py-3">
@@ -221,7 +196,7 @@ export default function AccountCreate() {
             <button
               type="button"
               onClick={() => navigate("/login")}
-              className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10"
+              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-semibold text-white/75 hover:bg-white/10"
             >
               {t.backToLogin}
             </button>
