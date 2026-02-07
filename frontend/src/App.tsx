@@ -1,9 +1,9 @@
 import "./index.css";
 import { Routes, Route } from "react-router-dom";
+
 import LandingPage from "./pages/landingPage";
-import NavBar from "./pages/NavBar";
 import Login from "./pages/Login";
-import StyleGuide from "./pages/StyleGuide";
+import AccountCreate from "./pages/AccountCreate";
 
 export default function App() {
   return (
