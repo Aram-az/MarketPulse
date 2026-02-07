@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "../index.css";
 
 const LandingPage: React.FC = () => {
+	const navigate = useNavigate();
 	return (
 		<main className="p-4">
 			<section className="m-3">
@@ -25,7 +27,7 @@ const LandingPage: React.FC = () => {
 			</section>
 
 			<section className="m-3">
-				<button className="btn-futuristic-red">
+				<button className="btn-futuristic-red" onClick={() => navigate("/home")}>
 					Primary Button
 				</button>
 			</section>
