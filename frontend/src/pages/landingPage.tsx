@@ -25,7 +25,7 @@ const LandingPage: React.FC = () => {
 			</section>
 
 			<section className="m-3">
-				<button className="btn-label button-text bg-accent p-2 m-2">
+				<button className="btn-futuristic-red">
 					Primary Button
 				</button>
 			</section>

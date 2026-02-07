@@ -12,7 +12,7 @@
 	--color-text-secondary: 55 65 81; /* #374151 */
 	--color-muted: 107 114 128; /* #6B7280 */
 	--color-inverse: 255 255 255; /* white */
-	--color-accent: 37 99 235; /* #2E7D32 */
+	--color-accent: 228, 28, 35; /* #2E7D32 */
 
 	/* Spacing scale (px) */
 	--space-1: 4px;
@@ -181,3 +181,32 @@ body {
 /* End of tokens and utilities */
 
 
+@layer components {
+  .btn-futuristic-red {
+    @apply relative inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold text-white;
+    @apply bg-[#DC143C] transition-transform duration-200;
+    @apply hover:scale-[1.02] active:scale-[0.99];
+
+    /* NEW: 3D depth (everything else unchanged) */
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),  /* top highlight */
+      inset 0 -10px 18px rgba(0, 0, 0, 0.22),  /* bottom shading */
+      0 14px 26px rgba(0, 0, 0, 0.22);         /* outer depth */
+  }
+
+  .btn-futuristic-red::after {
+    content: "";
+    position: absolute;
+    inset: -8px;	/* expand beyond button edges for glow */
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #800020 0%, #ff2da6 45%, #32d6ff 100%);
+    filter: blur(24px);
+    opacity: 0.70;
+  }
+
+  .btn-futuristic-red:focus-visible {
+    outline: 2px solid rgba(50, 214, 255, 0.8);
+    outline-offset: 2px;
+  }
+}
