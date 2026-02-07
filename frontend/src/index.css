@@ -1,1 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+
+:root {
+	/* Font stacks */
+	--font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+	/* Color tokens */
+	--color-bg: 255 255 255; /* use as rgb via color: rgb(var(--color-bg)) if needed */
+	--color-text-primary: 17 24 39; /* #111827 */
+	--color-text-secondary: 55 65 81; /* #374151 */
+	--color-muted: 107 114 128; /* #6B7280 */
+	--color-inverse: 255 255 255; /* white */
+	--color-accent: 37 99 235; /* #2E7D32 */
+
+	/* Spacing scale (px) */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 16px;
+	--space-4: 24px;
+	--space-5: 32px;
+
+	/* Font sizes */
+	--fs-display: 56px;
+	--fs-h1: 40px;
+	--fs-h2: 32px;
+	--fs-h3: 24px;
+	--fs-body: 16px;
+	--fs-caption: 12px;
+	--fs-overline: 10px;
+	--fs-button: 14px;
+
+	/* Line heights */
+	--lh-tight: 1.05;
+	--lh-heading: 1.12;
+	--lh-body: 1.5;
+	--lh-caption: 1.2;
+
+	/* Letter spacing */
+	--ls-tight: -0.015em;
+	--ls-normal: 0em;
+	--ls-button: 0.02em;
+	--ls-overline: 0.12em;
+
+	/* Font weights */
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-semibold: 600;
+	--fw-bold: 700;
+}
+
+/* Base document defaults */
+html, body, #root {
+	height: 100%;
+}
+body {
+	font-family: var(--font-sans);
+	font-size: var(--fs-body);
+	line-height: var(--lh-body);
+	color: rgb(var(--color-text-primary));
+	background: rgb(var(--color-bg));
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography variants */
+.display, .h1, .h2, .h3, .body, .body-strong, .caption, .overline, .button-text {
+	font-family: var(--font-sans);
+	color: rgb(var(--color-text-primary));
+	margin: 0;
+}
+
+.display {
+	font-size: var(--fs-display);
+	line-height: var(--lh-tight);
+	font-weight: var(--fw-bold);
+	letter-spacing: var(--ls-tight);
+}
+
+.h1 {
+	font-size: var(--fs-h1);
+	line-height: var(--lh-heading);
+	font-weight: var(--fw-semibold);
+	letter-spacing: var(--ls-tight);
+}
+
+.h2 {
+	font-size: var(--fs-h2);
+	line-height: var(--lh-heading);
+	font-weight: var(--fw-semibold);
+}
+
+.h3 {
+	font-size: var(--fs-h3);
+	line-height: var(--lh-heading);
+	font-weight: var(--fw-medium);
+}
+
+.body {
+	font-size: var(--fs-body);
+	line-height: var(--lh-body);
+	font-weight: var(--fw-regular);
+}
+
+.body-strong {
+	font-size: var(--fs-body);
+	line-height: var(--lh-body);
+	font-weight: var(--fw-semibold);
+}
+
+.caption {
+	font-size: var(--fs-caption);
+	line-height: var(--lh-caption);
+	color: rgb(var(--color-text-secondary));
+}
+
+.overline {
+	font-size: var(--fs-overline);
+	line-height: var(--lh-caption);
+	letter-spacing: var(--ls-overline);
+	text-transform: uppercase;
+	color: rgb(var(--color-muted));
+}
+
+.button-text {
+	font-size: var(--fs-button);
+	line-height: 1;
+	font-weight: var(--fw-semibold);
+	letter-spacing: var(--ls-button);
+}
+
+/* Text color utilities */
+.text-primary { color: rgb(var(--color-text-primary)); }
+.text-secondary { color: rgb(var(--color-text-secondary)); }
+.text-muted { color: rgb(var(--color-muted)); }
+.text-inverse { color: rgb(var(--color-inverse)); }
+.text-accent { color: rgb(var(--color-accent)); }
+
+/* Spacing utilities (simple subset) */
+.m-1 { margin: var(--space-1); }
+.m-2 { margin: var(--space-2); }
+.m-3 { margin: var(--space-3); }
+.m-4 { margin: var(--space-4); }
+.m-5 { margin: var(--space-5); }
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-5 { padding: var(--space-5); }
+
+/* Small helper for clickable labels to ensure consistent tappable text */
+.btn-label { display:inline-block; vertical-align:middle; }
+
+/* Accessibility: screen-reader only */
+.sr-only {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Small utilities for contrast testing or quick theme overrides */
+.bg-accent { background-color: rgb(var(--color-accent)); color: rgb(var(--color-inverse)); }
+
+/* End of tokens and utilities */
+
+
