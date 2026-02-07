@@ -1,0 +1,30 @@
+{
+  "name": "tbd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gavin-Tan1/tbd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Gavin-Tan1/tbd/issues"
+  },
+  "homepage": "https://github.com/Gavin-Tan1/tbd#readme",
+  "dependencies": {
+    "expo": "^54.0.33",
+    "react-dom": "19.1.0",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
+}
