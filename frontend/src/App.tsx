@@ -1,5 +1,4 @@
 import { Route, Routes, useLocation } from "react-router-dom";
-
 import NavBar from "./pages/NavBar";
 import LandingPage from "./pages/landingPage";
 import Login from "./pages/Login";
@@ -8,11 +7,13 @@ import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
 
+// 1. Import your new Page Wrapper
+import ChatBot from "./components/Chatbot";
+
 function AppLayout() {
   const { pathname } = useLocation();
-
-  const hideNav =
-    pathname === "/login" || pathname === "/account/create";
+  // Hide navbar on login/signup pages
+  const hideNav = pathname === "/login" || pathname === "/account/create";
 
   return (
     <>
@@ -24,6 +25,9 @@ function AppLayout() {
         <Route path="/account/create" element={<AccountCreate />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
+
+        {/* 2. Add the Route here */}
+        <Route path="/chatbot" element={<ChatBot />} />
       </Routes>
     </>
   );

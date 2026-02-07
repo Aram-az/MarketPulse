@@ -1,34 +1,22 @@
 import { useState, useRef } from "react";
-// import { Link } from "react-router-dom"; // Unused
+// import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Button from "../components/Button";
 
 // --- IMAGES ---
-// Make sure these exist in your public/ folder
 const stockBackdrop = "/stockBackdrop.png";
 const dashboardMaster = "/dashboard-master.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
 
 // --- ZOOM CONFIGURATION ---
-// ADJUST THESE NUMBERS TO TARGET YOUR SPECIFIC IMAGE SECTIONS
+// ADJUSTMENT INSTRUCTIONS BELOW
 const zoomPositions = [
-  // 1. Bias Detection
-  // Positive X moves image Right
-  // Positive Y moves image Down
-  { scale: 1.355, x: "24.5%", y: "-1%" },
-
-  // 2. Watchlist
-  // Negative X moves image Left
-  // Positive Y moves image Down
-  { scale: 2.8, x: "-80%", y: "50%" },
-
-  // 3. Chatbot
-  // Negative X moves image Left
-  // Negative Y moves image Up
-  { scale: 2.7, x: "-85%", y: "-53%" },
+  { scale: 2.3, x: "35%", y: "25%" }, // Index 0: Bias (Top Left)
+  { scale: 2.3, x: "-35%", y: "25%" }, // Index 1: Watchlist (Top Right)
+  { scale: 2.3, x: "-35%", y: "-35%" }, // Index 2: Chatbot (Bottom Right)
 ];
 
 const features = [
@@ -92,13 +80,11 @@ const testimonials = [
 
 export default function LandingPage() {
   const [activeFeature, setActiveFeature] = useState(-1);
-
   const mainRef = useRef<HTMLDivElement>(null);
   const dashboardImageRef = useRef<HTMLImageElement>(null);
 
   useGSAP(
     () => {
-      // Feature Section Intro Animation
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: ".gsap-title",
@@ -126,11 +112,10 @@ export default function LandingPage() {
     { scope: mainRef },
   );
 
-  // --- ZOOM ANIMATION EFFECT ---
+  // --- ZOOM ANIMATION ---
   useGSAP(() => {
     if (dashboardImageRef.current) {
       if (activeFeature === -1) {
-        // Reset to Overview (Scale 1)
         gsap.to(dashboardImageRef.current, {
           scale: 1,
           x: 0,
@@ -139,7 +124,6 @@ export default function LandingPage() {
           ease: "power3.inOut",
         });
       } else {
-        // Zoom into specific section
         const pos = zoomPositions[activeFeature];
         gsap.to(dashboardImageRef.current, {
           scale: pos.scale,
@@ -228,7 +212,7 @@ export default function LandingPage() {
               })}
             </div>
 
-            {/* Zoomable Image Window */}
+            {/* Zoomable Image */}
             <div className="feature-preview-box">
               <div className="preview-window-dots">
                 <div className="dot dot-red" />
@@ -280,15 +264,17 @@ export default function LandingPage() {
 
       {/* TESTIMONIALS SECTION */}
       <section className="testimonial-section">
-        {/* Header Content - FORCED CENTERING APPLIED HERE */}
+        {/* FIX: Removed 'container' class, applied Flex centering, removed Padding */}
         <div
-          className="container testimonial-header"
+          className="testimonial-header"
           style={{
             width: "100%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
             textAlign: "center",
+            padding: 0,
           }}
         >
           <h2 className="display testimonial-title">Beyond Expectations.</h2>
