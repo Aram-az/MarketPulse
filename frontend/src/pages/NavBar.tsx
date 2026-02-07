@@ -1,5 +1,6 @@
 import "../index.css";
 import { Link } from "react-router-dom";
+import Button from "../components/Button";
 
 const links = [
   { label: "ChatBot", href: "/chatbot" },
@@ -28,8 +29,8 @@ const NavBar = () => {
           ))}
         </ul>
 
-        <Link className="navbar_button" to="/login">
-          Login
+        <Link to="/login">
+          <Button>Login</Button>
         </Link>
 
         <div className="siteNav_spacer" />
