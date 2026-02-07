@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../theme/ThemeContext";
 
 type Lang = "en" | "fr";
 
-function setDarkMode(enabled: boolean) {
-  document.documentElement.classList.toggle("dark", enabled);
-}
-
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme(); // app-wide theme
 
   const [lang, setLang] = useState<Lang>("en");
-  const [darkMode, setDarkModeState] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,11 +16,6 @@ export default function LoginPage() {
 
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    setDarkMode(false);
-    setDarkModeState(false);
-  }, []);
 
   const t = useMemo(() => {
     const en = {
@@ -45,8 +37,6 @@ export default function LoginPage() {
       theme: "Theme",
       light: "Light",
       dark: "Dark",
-
-      // Validation messages
       emailRequired: "Please enter your email address.",
       emailInvalid: "Please enter a valid email address.",
       passwordRequired: "Please enter your password.",
@@ -71,8 +61,6 @@ export default function LoginPage() {
       theme: "Thème",
       light: "Clair",
       dark: "Sombre",
-
-      // Validation messages
       emailRequired: "Veuillez entrer votre adresse courriel.",
       emailInvalid: "Veuillez entrer une adresse courriel valide.",
       passwordRequired: "Veuillez entrer votre mot de passe.",
@@ -97,7 +85,6 @@ export default function LoginPage() {
     const p = passwordRef.current;
 
     if (e) {
-      // Required + type=email
       if (e.validity.valueMissing) e.setCustomValidity(t.emailRequired);
       else if (e.validity.typeMismatch) e.setCustomValidity(t.emailInvalid);
       else e.setCustomValidity("");
@@ -145,6 +132,7 @@ export default function LoginPage() {
             {/* Header */}
             <div className="flex items-start justify-between gap-6">
               <div className="flex items-center gap-3">
+                {/* Logo pill (same as AccountCreate) */}
                 <div className="h-10 w-28 overflow-hidden rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-[#c1c1c1]">
                   <img
                     src="/nb-logo.png"
@@ -165,15 +153,11 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    const next = !darkMode;
-                    setDarkModeState(next);
-                    setDarkMode(next);
-                  }}
+                  onClick={toggleTheme}
                   className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-black/80 hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
                   title="Toggle theme"
                 >
-                  {t.theme}: {darkMode ? t.dark : t.light}
+                  {t.theme}: {theme === "dark" ? t.dark : t.light}
                 </button>
               </div>
             </div>
