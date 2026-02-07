@@ -243,7 +243,7 @@ body {
   .btn-futuristic-red::after {
     content: "";
     position: absolute;
-    inset: -8px; /* expand beyond button edges for glow */
+    inset: -5px; /* expand beyond button edges for glow */
     z-index: -1;
     border-radius: inherit;
     background: linear-gradient(135deg, #800020 0%, #ff2da6 45%, #32d6ff 100%);
