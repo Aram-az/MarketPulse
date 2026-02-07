@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 type Lang = "en" | "fr";
@@ -16,6 +16,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const passwordRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setDarkMode(false);
@@ -42,6 +45,11 @@ export default function LoginPage() {
       theme: "Theme",
       light: "Light",
       dark: "Dark",
+
+      // Validation messages
+      emailRequired: "Please enter your email address.",
+      emailInvalid: "Please enter a valid email address.",
+      passwordRequired: "Please enter your password.",
     };
 
     const fr = {
@@ -63,6 +71,11 @@ export default function LoginPage() {
       theme: "Thème",
       light: "Clair",
       dark: "Sombre",
+
+      // Validation messages
+      emailRequired: "Veuillez entrer votre adresse courriel.",
+      emailInvalid: "Veuillez entrer une adresse courriel valide.",
+      passwordRequired: "Veuillez entrer votre mot de passe.",
     };
 
     return lang === "en" ? en : fr;
@@ -73,6 +86,42 @@ export default function LoginPage() {
     "placeholder:text-black/40 focus:border-[#DC143C]/50 focus:shadow-[0_0_0_3px_rgba(220,20,60,0.12)] " +
     "dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 " +
     "dark:focus:shadow-[0_0_0_3px_rgba(255,45,166,0.18)]";
+
+  function clearValidity(el: HTMLInputElement | null) {
+    if (!el) return;
+    el.setCustomValidity("");
+  }
+
+  function validateAndReport(): boolean {
+    const e = emailRef.current;
+    const p = passwordRef.current;
+
+    if (e) {
+      // Required + type=email
+      if (e.validity.valueMissing) e.setCustomValidity(t.emailRequired);
+      else if (e.validity.typeMismatch) e.setCustomValidity(t.emailInvalid);
+      else e.setCustomValidity("");
+
+      if (!e.checkValidity()) {
+        e.reportValidity();
+        e.focus();
+        return false;
+      }
+    }
+
+    if (p) {
+      if (p.validity.valueMissing) p.setCustomValidity(t.passwordRequired);
+      else p.setCustomValidity("");
+
+      if (!p.checkValidity()) {
+        p.reportValidity();
+        p.focus();
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   return (
     <section
@@ -96,7 +145,6 @@ export default function LoginPage() {
             {/* Header */}
             <div className="flex items-start justify-between gap-6">
               <div className="flex items-center gap-3">
-                {/* Logo pill (same size as AccountCreate) */}
                 <div className="h-10 w-28 overflow-hidden rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-[#c1c1c1]">
                   <img
                     src="/nb-logo.png"
@@ -135,9 +183,11 @@ export default function LoginPage() {
             {/* Form */}
             <form
               className="mt-8 space-y-5"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                navigate("/landingPage"); // landing page after sign in
+                if (!validateAndReport()) return;
+                navigate("/");
               }}
             >
               <div>
@@ -145,10 +195,12 @@ export default function LoginPage() {
                   {t.emailLabel}
                 </label>
                 <input
+                  ref={emailRef}
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onInput={() => clearValidity(emailRef.current)}
                   placeholder={t.emailPlaceholder}
                   className={inputClass}
                   autoComplete="username"
@@ -163,10 +215,12 @@ export default function LoginPage() {
 
                 <div className="relative mt-2">
                   <input
+                    ref={passwordRef}
                     id="password"
                     type={showPw ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onInput={() => clearValidity(passwordRef.current)}
                     placeholder={t.passwordPlaceholder}
                     className={
                       inputClass.replace("mt-2 ", "").replace("pr-12", "") + " pr-12"
