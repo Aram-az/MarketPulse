@@ -137,7 +137,7 @@ export default function LoginPage() {
               className="mt-8 space-y-5"
               onSubmit={(e) => {
                 e.preventDefault();
-                navigate("/"); // landing page after sign in
+                navigate("/landingPage"); // landing page after sign in
               }}
             >
               <div>
