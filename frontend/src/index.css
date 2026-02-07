@@ -210,3 +210,26 @@ body {
     outline-offset: 2px;
   }
 }
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-black/10 bg-white shadow-sm;
+  }
+
+  .dropzone-dotted {
+    @apply rounded-2xl bg-white px-10 py-14 text-center;
+    border: 2px dotted rgba(17, 24, 39, 0.35);
+  }
+
+  .dropzone-dotted:hover {
+    border-color: rgba(228, 28, 35, 0.55);
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition hover:bg-black/5 hover:text-black;
+  }
+
+  .sidebar-item-active {
+    @apply bg-black/5 text-black;
+  }
+}
