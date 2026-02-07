@@ -7,9 +7,6 @@ import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
 
-// 1. Import your new Page Wrapper
-import ChatBot from "./components/Chatbot";
-
 function AppLayout() {
   const { pathname } = useLocation();
   // Hide navbar on login/signup pages
