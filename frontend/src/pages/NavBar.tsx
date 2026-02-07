@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../components/Button";
 
 const links = [
-  { label: "ChatBot", href: "/chatbot" },
+  { label: "ChatBot", href: "/home" },
   { label: "About", href: "/about" },
   { label: "News", href: "/news" },
   { label: "Watchlist", href: "/watchlist" },

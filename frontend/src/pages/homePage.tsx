@@ -1,131 +1,101 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
-
-function setDarkMode(enabled: boolean) {
-  document.documentElement.classList.toggle("dark", enabled);
-}
+import { useRef, useState } from "react";
 
 export default function HomePage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkModeState] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Light mode by default
-  useEffect(() => {
-    setDarkMode(false);
-    setDarkModeState(false);
-  }, []);
+  const [isDragging, setIsDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
-  const nav = useMemo(
-    () => [
-      { to: "/portfolio", label: "Portfolio" },
-      { to: "/settings", label: "Settings" },
-    ],
-    []
-  );
+  function onPickFile() {
+    inputRef.current?.click();
+  }
+
+  function acceptFile(f: File | null) {
+    if (!f) return;
+    const ok = f.name.toLowerCase().endsWith(".csv") || f.type === "text/csv";
+    if (!ok) return;
+    setFile(f);
+  }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8] text-black">
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <aside
-          className={[
-            "sticky top-0 h-screen shrink-0 border-r border-black/10 bg-white",
-            "transition-[width] duration-200",
-            sidebarOpen ? "w-72" : "w-16",
-          ].join(" ")}
-        >
-          <div className="flex h-full flex-col">
-            {/* Top controls */}
-            <div className="flex items-center justify-between gap-2 p-3">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen((v) => !v)}
-                className="rounded-lg p-2 hover:bg-black/5"
-                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-              >
-                {/* simple hamburger */}
-                <div className="space-y-1">
-                  <div className="h-0.5 w-5 bg-black/70" />
-                  <div className="h-0.5 w-5 bg-black/70" />
-                  <div className="h-0.5 w-5 bg-black/70" />
-                </div>
-              </button>
+    <div className="min-h-screen bg-[#f7f7f8] text-black dark:bg-[#0b0f14] dark:text-white">
+      <main className="min-w-0 p-6">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="panel rounded-xl bg-white p-10 ring-1 ring-black/10 dark:bg-white/5 dark:ring-white/10">
+            <h1 className="text-center text-xl font-semibold">
+              Upload CSV For AI Trading Bias Analysis
+            </h1>
 
-              {sidebarOpen && (
-                <button type="button" className="btn-futuristic-red px-3 py-2">
-                  New
-                </button>
-              )}
-            </div>
+            <div
+              className={[
+                "mt-10 rounded-xl border-2 border-dashed p-10 text-center",
+                "border-black/15 bg-black/[0.02]",
+                "dark:border-white/15 dark:bg-white/[0.03]",
+                isDragging ? "border-[#DC143C]/60 bg-[#DC143C]/[0.06]" : "",
+              ].join(" ")}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const f = e.dataTransfer.files?.[0] ?? null;
+                acceptFile(f);
+              }}
+              role="button"
+              tabIndex={0}
+              onClick={onPickFile}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") onPickFile();
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => acceptFile(e.target.files?.[0] ?? null)}
+              />
 
-            {/* Nav */}
-            <nav className="flex-1 space-y-1 px-2">
-              {nav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    [
-                      "sidebar-item",
-                      isActive ? "sidebar-item-active" : "",
-                      !sidebarOpen ? "justify-center px-0" : "",
-                    ].join(" ")
-                  }
-                >
-                  {/* icon placeholder */}
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/5 text-xs">
-                    {item.label[0]}
-                  </span>
+              <div className="text-base font-medium">
+                {file ? `Selected: ${file.name}` : "Drop your CSV here"}
+              </div>
 
-                  {sidebarOpen && <span>{item.label}</span>}
-                </NavLink>
-              ))}
-            </nav>
+              <div className="mt-4 text-sm text-black/60 dark:text-white/60">or</div>
 
-            {/* Theme toggle only when open */}
-            {sidebarOpen && (
-              <div className="border-t border-black/10 p-3">
+              <div className="mt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    const next = !darkMode;
-                    setDarkModeState(next);
-                    setDarkMode(next);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPickFile();
                   }}
-                  className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-left text-sm hover:bg-black/5"
+                  className="btn-futuristic-red px-5 py-3"
                 >
-                  Theme: {darkMode ? "Dark" : "Light"}
+                  Search From Computer
                 </button>
               </div>
-            )}
-          </div>
-        </aside>
 
-        {/* Main content */}
-        <main className="min-w-0 flex-1 p-6">
-          <div className="mx-auto w-full max-w-5xl">
-            <div className="panel p-10">
-              <h1 className="text-center text-xl font-semibold">
-                Upload CSV For AI Trading Bias Analysis
-              </h1>
-
-              <div className="mt-10 dropzone-dotted">
-                <div className="text-base font-medium">Drop your files here</div>
-                <div className="mt-4 text-sm text-black/60">or</div>
-                <div className="mt-4">
-                  <button type="button" className="btn-futuristic-red px-5 py-3">
-                    Search From Computer
-                  </button>
-                </div>
-                <div className="mt-6 text-xs text-black/45">
-                  Expected columns: Timestamp, Buy/sell, Asset, P/L.
-                </div>
+              <div className="mt-6 text-xs text-black/45 dark:text-white/45">
+                Expected columns: Timestamp, Buy/sell, Asset, P/L.
               </div>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

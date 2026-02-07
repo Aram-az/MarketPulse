@@ -7,6 +7,8 @@ import StyleGuide from "./pages/StyleGuide";
 import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
+import HomePage from "./pages/homePage";
+
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -24,6 +26,7 @@ function AppLayout() {
         <Route path="/account/create" element={<AccountCreate />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
+        <Route path="/home" element={<HomePage />} />
       </Routes>
     </>
   );
