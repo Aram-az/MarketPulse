@@ -256,3 +256,102 @@ body {
     outline-offset: 2px;
   }
 }
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.siteNav {
+  width: 100%;
+  padding: 14px 24px;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.siteNav_logo {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  margin-left: 0;
+}
+
+.navbar {
+  justify-self: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.navbar_link {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 40;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.navbar_link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.siteNav__spacer {
+  width: 60px;
+}
+
+.navbar_button {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  margin-left: 0;
+}
+
+.navbar_login {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 40;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.navbar_login:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-black/10 bg-white shadow-sm;
+  }
+
+  .dropzone-dotted {
+    @apply rounded-2xl bg-white px-10 py-14 text-center;
+    border: 2px dotted rgba(17, 24, 39, 0.35);
+  }
+
+  .dropzone-dotted:hover {
+    border-color: rgba(228, 28, 35, 0.55);
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition hover:bg-black/5 hover:text-black;
+  }
+
+  .sidebar-item-active {
+    @apply bg-black/5 text-black;
+  }
+}
+
+
+@layer base {
+  input, textarea, select {
+    color: rgb(17 24 39); /* Tailwind gray-900-ish */
+  }
+}
