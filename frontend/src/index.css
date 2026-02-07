@@ -24,7 +24,7 @@
   --space-5: 32px;
 
   /* Font sizes */
-  --fs-display: 56px;
+  --fs-display: 90px;
   --fs-h1: 40px;
   --fs-h2: 32px;
   --fs-h3: 24px;
@@ -238,7 +238,7 @@ body {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.28),
       /* top highlight */ inset 0 -10px 18px rgba(0, 0, 0, 0.22),
-      /* bottom shading */ 0 14px 26px rgba(0, 0, 0, 0.22); /* outer depth */
+      /* bottom shading */ 0 14px 26px rgba(0, 0, 0, 0.5); /* outer depth */
   }
 
   .btn-futuristic-red::after {
@@ -247,7 +247,7 @@ body {
     inset: -5px; /* expand beyond button edges for glow */
     z-index: -1;
     border-radius: inherit;
-    background: linear-gradient(135deg, #800020 0%, #ff2da6 45%, #32d6ff 100%);
+    background: linear-gradient(135deg, #800020 0%, #ff2da6 35%, #32d6ff 100%);
     filter: blur(24px);
     opacity: 0.7;
   }
@@ -308,51 +308,62 @@ body {
   width: 60px;
 }
 
-.navbar_button {
-  justify-self: start;
-  display: flex;
-  align-items: center;
-  margin-left: 0;
-}
-
 .navbar_login {
   color: #fff;
   text-decoration: none;
   font-weight: 40;
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 
 .navbar_login:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-@layer components {
-  .panel {
-    @apply rounded-2xl border border-black/10 bg-white shadow-sm;
-  }
-
-  .dropzone-dotted {
-    @apply rounded-2xl bg-white px-10 py-14 text-center;
-    border: 2px dotted rgba(17, 24, 39, 0.35);
-  }
-
-  .dropzone-dotted:hover {
-    border-color: rgba(228, 28, 35, 0.55);
-  }
-
-  .sidebar-item {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition hover:bg-black/5 hover:text-black;
-  }
-
-  .sidebar-item-active {
-    @apply bg-black/5 text-black;
-  }
+.text-marketpulse-radial {
+  background: white;
+  background: radial-gradient(
+    100% 90% at top left,
+    #ffffff 60%,
+    #ffffff 50%,
+    rgba(220, 20, 60, 0.5) 100%
+  );
+  background-clip: text;
+  color: transparent;
+  padding: none;
 }
 
+.text-center {
+  text-align: center;
+}
 
-@layer base {
-  input, textarea, select {
-    color: rgb(17 24 39); /* Tailwind gray-900-ish */
-  }
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.align-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.margin-top-small {
+  padding-top: 0;
+  margin-top: 40px;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.margin-top-none {
+  padding-top: 0;
+  margin-top: 0px;
 }

@@ -7,10 +7,13 @@ import AccountCreate from "./pages/AccountCreate";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/account/create" element={<AccountCreate />} />
-    </Routes>
+    <>
+      <NavBar />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/style" element={<StyleGuide />} />
+      </Routes>
+    </>
   );
 }
