@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 
+// --- TYPES ---
 type Sender = "user" | "bot";
 
 interface Message {
@@ -37,6 +38,7 @@ interface Agent {
   description: string;
 }
 
+// --- AGENT CONFIGURATION ---
 const AGENTS: Agent[] = [
   {
     id: "norman",
@@ -72,6 +74,7 @@ const AGENTS: Agent[] = [
   },
 ];
 
+// --- MOCK SESSIONS (Database) ---
 const MOCK_SESSIONS: Record<number, Message[]> = {
   1: [
     {
@@ -117,6 +120,7 @@ const MOCK_SESSIONS: Record<number, Message[]> = {
   ],
 };
 
+// List displayed in menu
 const CHAT_HISTORY_LIST = [
   { id: 1, label: "NVDA Analysis", date: "Today" },
   { id: 2, label: "Overtrading Check", date: "Yesterday" },
@@ -143,16 +147,17 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     initialFile || null,
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
   const threadIdRef = useRef<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load initial file
   useEffect(() => {
     if (initialFile) setUploadedFile(initialFile);
   }, [initialFile]);
 
+  // Initialize Chat UI (Intro Message)
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
@@ -164,9 +169,30 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         },
       ]);
     }
+    // Attempt to connect immediately when agent switches
+    connectToBackend();
   }, [activeAgent]);
 
-  // Load History Session
+  // Helper to connect/create thread
+  const connectToBackend = async () => {
+    try {
+      // Use 127.0.0.1 to avoid localhost resolution issues
+      const res = await fetch("http://127.0.0.1:5000/api/chat/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentName: activeAgent.name }),
+      });
+      const data = await res.json();
+      if (data.threadId) {
+        threadIdRef.current = data.threadId;
+        console.log("Connected to Thread:", data.threadId);
+      }
+    } catch (err) {
+      console.error("Connection failed (will retry on send):", err);
+    }
+  };
+
+  // --- LOAD HISTORY FUNCTION ---
   const loadHistorySession = (sessionId: number) => {
     const sessionMessages = MOCK_SESSIONS[sessionId];
     if (sessionMessages) {
@@ -189,6 +215,7 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     scrollToBottom();
   }, [messages]);
 
+  // --- SEND MESSAGE LOGIC ---
   const handleSendMessage = async () => {
     if (!inputValue.trim() && !uploadedFile) return;
 
@@ -217,15 +244,37 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     ]);
 
     try {
+      // FIX: Ensure we have a thread ID before sending
+      let currentThreadId = threadIdRef.current;
+
+      if (!currentThreadId) {
+        console.log("Thread ID missing. Attempting to create new session...");
+        const startRes = await fetch("http://127.0.0.1:5000/api/chat/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentName: activeAgent.name }),
+        });
+        const startData = await startRes.json();
+        if (startData.threadId) {
+          currentThreadId = startData.threadId;
+          threadIdRef.current = currentThreadId;
+        } else {
+          throw new Error("Failed to create chat session");
+        }
+      }
+
       const formData = new FormData();
       formData.append("message", newUserMsg.text);
-      if (threadIdRef.current) formData.append("threadId", threadIdRef.current);
+      // Now we are guaranteed to have a threadId or we threw an error
+      formData.append("threadId", currentThreadId!);
       if (uploadedFile) formData.append("file", uploadedFile);
 
-      const response = await fetch("http://localhost:5000/api/chat/message", {
+      const response = await fetch("http://127.0.0.1:5000/api/chat/message", {
         method: "POST",
         body: formData,
       });
+
+      if (!response.ok) throw new Error("Backend error");
 
       const data = await response.json();
 
@@ -242,12 +291,13 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
 
       if (uploadedFile) setUploadedFile(null);
     } catch (error) {
+      console.error(error);
       setMessages((prev) =>
         prev
           .filter((m) => m.id !== thinkingMsgId)
           .concat({
             id: Date.now().toString(),
-            text: "Error: Unable to connect to the server.",
+            text: "Error: Unable to connect to the server. Please ensure the backend is running.",
             sender: "bot",
             timestamp: new Date(),
           }),
@@ -298,56 +348,37 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       </div>
 
+      {/* --- MENU DROPDOWN --- */}
       {isMenuOpen && (
         <div className="absolute top-[60px] left-0 bottom-0 w-64 bg-[#111] border-r border-[rgba(255,255,255,0.1)] z-30 flex flex-col animate-in slide-in-from-left-5 duration-200 overflow-x-hidden">
           <div className="p-4 flex-1 overflow-y-auto">
+            {/* 1. AGENT SELECTION */}
             <div className="mb-8">
               <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
                 Select Agent
               </h4>
               <div className="space-y-1">
                 {AGENTS.map((agent) => (
-                  <div key={agent.id} className="relative">
-                    <button
-                      onClick={() => {
-                        setActiveAgent(agent);
-                        setMessages([]);
-                        setIsMenuOpen(false);
-                      }}
-                      onMouseEnter={() => setHoveredAgent(agent.id)}
-                      onMouseLeave={() => setHoveredAgent(null)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors duration-200 ${activeAgent.id === agent.id ? "bg-[rgba(255,255,255,0.1)] text-white border border-[rgba(255,255,255,0.1)]" : "text-muted hover:bg-[rgba(255,255,255,0.05)] hover:text-white"}`}
-                    >
-                      <agent.icon size={16} style={{ color: agent.color }} />
-                      <div className="text-left">
-                        <div className="font-medium">{agent.name}</div>
-                        <div className="text-[10px] opacity-60">
-                          {agent.role}
-                        </div>
-                      </div>
-                    </button>
-
-                    {hoveredAgent === agent.id && (
-                      <div className="absolute left-[105%] top-0 w-56 bg-[#0a0a0a] border border-[rgba(255,255,255,0.15)] p-3 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
-                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-                          <agent.icon
-                            size={14}
-                            style={{ color: agent.color }}
-                          />
-                          <span className="text-xs font-bold text-white">
-                            {agent.name}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted leading-relaxed">
-                          {agent.description}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    key={agent.id}
+                    onClick={() => {
+                      setActiveAgent(agent);
+                      setMessages([]);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors duration-200 ${activeAgent.id === agent.id ? "bg-[rgba(255,255,255,0.1)] text-white border border-[rgba(255,255,255,0.1)]" : "text-muted hover:text-white hover:bg-[rgba(255,255,255,0.05)]"}`}
+                  >
+                    <agent.icon size={16} style={{ color: agent.color }} />
+                    <div className="text-left">
+                      <div className="font-medium">{agent.name}</div>
+                      <div className="text-[10px] opacity-60">{agent.role}</div>
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
 
+            {/* 2. CHAT HISTORY */}
             <div>
               <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
                 Chat History
@@ -375,6 +406,7 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       )}
 
+      {/* CHAT AREA */}
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent bg-gradient-to-b from-[#0a0a0a] to-[#050505]"
@@ -421,6 +453,7 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         ))}
       </div>
 
+      {/* INPUT AREA */}
       <div className="bg-[#050505] p-3 border-t border-[rgba(255,255,255,0.1)] relative z-20 shrink-0">
         {!isMenuOpen && messages.length < 3 && (
           <div className="flex flex-wrap gap-2 mb-3">
