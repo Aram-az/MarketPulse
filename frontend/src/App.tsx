@@ -8,6 +8,7 @@ import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
 import HomePage from "./pages/homePage";
+import MarketPage from "./pages/marketPage";
 
 
 function AppLayout() {
@@ -27,6 +28,7 @@ function AppLayout() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/market" element={<MarketPage />} />
       </Routes>
     </>
   );
