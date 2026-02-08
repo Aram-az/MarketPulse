@@ -16,7 +16,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-// --- TYPES ---
 type Sender = "user" | "bot";
 
 interface Message {
@@ -38,7 +37,6 @@ interface Agent {
   description: string;
 }
 
-// --- AGENT CONFIGURATION ---
 const AGENTS: Agent[] = [
   {
     id: "norman",
@@ -74,7 +72,6 @@ const AGENTS: Agent[] = [
   },
 ];
 
-// --- MOCK SESSIONS (Database) ---
 const MOCK_SESSIONS: Record<number, Message[]> = {
   1: [
     {
@@ -120,7 +117,6 @@ const MOCK_SESSIONS: Record<number, Message[]> = {
   ],
 };
 
-// List displayed in menu
 const CHAT_HISTORY_LIST = [
   { id: 1, label: "NVDA Analysis", date: "Today" },
   { id: 2, label: "Overtrading Check", date: "Yesterday" },
@@ -152,12 +148,10 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load initial file
   useEffect(() => {
     if (initialFile) setUploadedFile(initialFile);
   }, [initialFile]);
 
-  // Initialize Chat UI (Intro Message)
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
@@ -169,14 +163,12 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         },
       ]);
     }
-    // Attempt to connect immediately when agent switches
+
     connectToBackend();
   }, [activeAgent]);
 
-  // Helper to connect/create thread
   const connectToBackend = async () => {
     try {
-      // Use 127.0.0.1 to avoid localhost resolution issues
       const res = await fetch("http://127.0.0.1:5000/api/chat/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -192,7 +184,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     }
   };
 
-  // --- LOAD HISTORY FUNCTION ---
   const loadHistorySession = (sessionId: number) => {
     const sessionMessages = MOCK_SESSIONS[sessionId];
     if (sessionMessages) {
@@ -215,7 +206,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     scrollToBottom();
   }, [messages]);
 
-  // --- SEND MESSAGE LOGIC ---
   const handleSendMessage = async () => {
     if (!inputValue.trim() && !uploadedFile) return;
 
@@ -244,7 +234,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     ]);
 
     try {
-      // FIX: Ensure we have a thread ID before sending
       let currentThreadId = threadIdRef.current;
 
       if (!currentThreadId) {
@@ -265,7 +254,7 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
 
       const formData = new FormData();
       formData.append("message", newUserMsg.text);
-      // Now we are guaranteed to have a threadId or we threw an error
+
       formData.append("threadId", currentThreadId!);
       if (uploadedFile) formData.append("file", uploadedFile);
 
@@ -324,7 +313,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
 
   return (
     <div className="relative flex flex-col h-full w-full bg-[#0a0a0a] overflow-hidden">
-      {/* HEADER */}
       <div className="h-[60px] bg-[#111] px-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between relative z-20 shrink-0">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -348,11 +336,9 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       </div>
 
-      {/* --- MENU DROPDOWN --- */}
       {isMenuOpen && (
         <div className="absolute top-[60px] left-0 bottom-0 w-64 bg-[#111] border-r border-[rgba(255,255,255,0.1)] z-30 flex flex-col animate-in slide-in-from-left-5 duration-200 overflow-x-hidden">
           <div className="p-4 flex-1 overflow-y-auto">
-            {/* 1. AGENT SELECTION */}
             <div className="mb-8">
               <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
                 Select Agent
@@ -378,7 +364,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
               </div>
             </div>
 
-            {/* 2. CHAT HISTORY */}
             <div>
               <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
                 Chat History
@@ -406,7 +391,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       )}
 
-      {/* CHAT AREA */}
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent bg-gradient-to-b from-[#0a0a0a] to-[#050505]"
