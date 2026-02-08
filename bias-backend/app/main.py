@@ -70,9 +70,16 @@ async def analyze_mock(name: str = Query(...)) -> Any:
             detail=f"Mock CSV missing at {path}. Copy mock CSVs into app/mock_data/.",
         )
 
-    raw = open(path, "rb").read()
-    loaded = load_trades_from_bytes(raw, "mock.csv")
-    summary, biases_dict, warnings = analyze(loaded.df)
+    try:
+        raw = open(path, "rb").read()
+        loaded = load_trades_from_bytes(raw, "mock.csv")
+        summary, biases_dict, warnings = analyze(loaded.df)
+    except ValueError as e:
+        # ← this is the likely failure (timestamps/columns/etc.)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {e}")
+
     biases = {k: BiasResult(**v) for k, v in biases_dict.items()}
 
     return AnalyzeResponse(
