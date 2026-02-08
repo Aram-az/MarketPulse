@@ -1,120 +1,116 @@
 import express from "express";
 import cors from "cors";
-import { config } from "dotenv";
+import dotenv from "dotenv";
+import axios from "axios";
+import multer from "multer";
+import FormData from "form-data";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-config({ path: "./keydata.env" });
+dotenv.config();
+
+const PORT = 5000;
+const BACKBOARD_URL = "https://app.backboard.io/api";
+const API_KEY = process.env.BACKBOARD_API_KEY;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const assistantIdsPath = path.join(__dirname, "assistant-ids.json");
+let ASSISTANT_IDS = {};
+
+if (fs.existsSync(assistantIdsPath)) {
+  ASSISTANT_IDS = JSON.parse(fs.readFileSync(assistantIdsPath, "utf8"));
+  console.log("✅ Loaded Assistant IDs:", ASSISTANT_IDS);
+} else {
+  console.error("❌ Error: assistant-ids.json not found.");
+}
 
 const app = express();
-app.use(cors());
+
+// 1. Allow Frontend to connect
+app.use(cors({ origin: "*" })); 
 app.use(express.json());
 
-const PORT = Number(process.env.PORT || 5000);
-const API_KEY = process.env.ALPHAVANTAGE_API_KEY;
-
-// ---- In-memory state ----
-/** symbol -> { quote, fetchedAt } */
-const cache = new Map();
-/** symbol -> Promise */
-const inflight = new Map();
-/** ordered list of watched symbols for round-robin refresh */
-let watchOrder = [];
-const watchSet = new Set();
-
-function normalizeSymbols(raw) {
-  return String(raw || "")
-    .split(",")
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean);
-}
-
-async function fetchOneQuote(symbol) {
-  if (!API_KEY) throw new Error("Missing ALPHAVANTAGE_API_KEY");
-
-  const url = new URL("https://www.alphavantage.co/query");
-  url.searchParams.set("function", "GLOBAL_QUOTE");
-  url.searchParams.set("symbol", symbol);
-  url.searchParams.set("apikey", API_KEY);
-
-  const r = await fetch(url);
-  const j = await r.json();
-
-  // Rate-limit responses commonly come back in a "Note" field
-  if (j?.Note) throw new Error("Rate limited");
-
-  const q = j?.["Global Quote"];
-  if (!q) throw new Error("No quote data");
-
-  const price = Number(q["05. price"] ?? 0);
-  const change = Number(q["09. change"] ?? 0);
-  const changePercent = Number(String(q["10. change percent"] ?? "0").replace("%", "") || 0);
-
-  return {
-    symbol,
-    price,
-    change,
-    changePercent,
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-// Register symbols to be refreshed in background (called from frontend)
-app.get("/api/watch", (req, res) => {
-  const symbols = normalizeSymbols(req.query.symbols).slice(0, 100);
-
-  for (const s of symbols) {
-    if (!watchSet.has(s)) {
-      watchSet.add(s);
-      watchOrder.push(s);
-    }
-  }
-
-  res.json({ watched: watchOrder });
+// 2. Logging Middleware (SEE REQUESTS IN TERMINAL)
+app.use((req, res, next) => {
+  console.log(`\n📥 [${req.method}] ${req.url}`);
+  next();
 });
 
-// Read quotes (returns cached immediately; also triggers refresh if stale)
-app.get("/api/quotes", async (req, res) => {
-  const symbols = normalizeSymbols(req.query.symbols).slice(0, 100);
+const upload = multer({ storage: multer.memoryStorage() });
 
-  // If user hits /api/quotes directly, auto-add to watch list as well
-  for (const s of symbols) {
-    if (!watchSet.has(s)) {
-      watchSet.add(s);
-      watchOrder.push(s);
-    }
+// --- ROUTES ---
+
+// Start Chat
+app.post("/api/chat/start", async (req, res) => {
+  try {
+    const { agentName } = req.body;
+    const targetAgentId = ASSISTANT_IDS[agentName?.toUpperCase()] || ASSISTANT_IDS.NORMAN;
+
+    console.log(`🔹 Creating thread for agent: ${agentName} (${targetAgentId})`);
+
+    const response = await axios.post(
+      `${BACKBOARD_URL}/assistants/${targetAgentId}/threads`,
+      {},
+      { headers: { "X-API-Key": API_KEY } }
+    );
+
+    console.log(`✅ Thread Created: ${response.data.thread_id}`);
+    res.json({ threadId: response.data.thread_id });
+
+  } catch (error) {
+    console.error("❌ Thread Creation Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to create thread" });
   }
-
-  const quotes = symbols
-    .map((s) => cache.get(s)?.quote)
-    .filter(Boolean);
-
-  res.json({ quotes });
 });
 
-// Background refresher: 1 symbol every 12s (≈5/min)
-setInterval(async () => {
-  if (!API_KEY) return;
-  if (watchOrder.length === 0) return;
+// Send Message
+app.post("/api/chat/message", upload.single("file"), async (req, res) => {
+  try {
+    // Log the raw body to debug
+    const threadId = req.body.threadId;
+    const message = req.body.message;
+    
+    console.log(`🔹 Received Message Request -> Thread: ${threadId}`);
 
-  // round-robin
-  const symbol = watchOrder.shift();
-  watchOrder.push(symbol);
+    if (!threadId || threadId === "null" || threadId === "undefined") {
+      console.warn("⚠️  Request Rejected: Missing Thread ID");
+      return res.status(400).json({ error: "Thread ID is required. Please refresh the page." });
+    }
 
-  if (inflight.has(symbol)) return;
+    const formData = new FormData();
+    formData.append("content", message || "");
+    formData.append("stream", "false");
+    formData.append("memory", "Auto");
 
-  const p = fetchOneQuote(symbol)
-    .then((quote) => {
-      cache.set(symbol, { quote, fetchedAt: Date.now() });
-    })
-    .catch(() => {
-      // keep old cached value on errors / rate limits
-    })
-    .finally(() => {
-      inflight.delete(symbol);
-    });
+    if (req.file) {
+      console.log(`📎 With File: ${req.file.originalname}`);
+      formData.append("files", req.file.buffer, {
+        filename: req.file.originalname,
+        contentType: req.file.mimetype,
+      });
+    }
 
-  inflight.set(symbol, p);
-}, 12000);
+    const response = await axios.post(
+      `${BACKBOARD_URL}/threads/${threadId}/messages`,
+      formData,
+      {
+        headers: {
+          "X-API-Key": API_KEY,
+          ...formData.getHeaders(),
+        },
+      }
+    );
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Backend running: http://127.0.0.1:${PORT}`);
+    console.log("✅ AI Response received");
+    res.json({ response: response.data.content });
+
+  } catch (error) {
+    console.error("❌ Message Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to process message" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
