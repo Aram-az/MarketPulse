@@ -11,6 +11,7 @@ import ChatBotPage from "./pages/ChatBotPage";
 import Footer from "./components/Footer";
 import MarketPage from "./pages/marketPage";
 import Dashboard from "./pages/Dashboard";
+import NewsPage from "./pages/NewsPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -43,6 +44,7 @@ function AppLayout() {
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
           <Route path="/market" element={<MarketPage />} />
+          <Route path="/news" element={<NewsPage />} />
 
           <Route
             path="/dashboard"
