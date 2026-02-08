@@ -16,8 +16,7 @@ export default function ChatBotPage() {
       <div className="absolute inset-0 bg-black/85 z-0" />
 
       {/* Content Container */}
-      {/* Added 'mb-16' here to push the footer away */}
-      <div className="relative z-10 w-full max-w-4xl flex flex-col items-center gap-8 mb-10">
+      <div className="relative z-10 w-full max-w-4xl flex flex-col items-center gap-8 mb-16">
         {/* Header Section */}
         <div className="text-center">
           <h1 className="h1 text-white mb-2">AI Bias Detector</h1>
@@ -26,7 +25,9 @@ export default function ChatBotPage() {
           </p>
         </div>
 
-        <div className="w-full">
+        {/* ChatBot Component Container */}
+        {/* ADDED 'h-[600px]' below to fix the squashing issue */}
+        <div className="w-full h-[600px] bg-[#0a0a0a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
           <ChatBot />
         </div>
       </div>
