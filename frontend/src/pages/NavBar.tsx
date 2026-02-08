@@ -10,7 +10,8 @@ const links = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "News", href: "/news" },
   { label: "Watchlist", href: "/watchlist" },
-  { label: "Markets", href: "/markets" },
+  { label: "Markets", href: "/market" },
+  { label: "Portfolio", href: "/portfolio" },
 ];
 
 const NavBar = () => {
