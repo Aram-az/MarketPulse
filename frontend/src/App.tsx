@@ -8,6 +8,9 @@ import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
 import ChatBotPage from "./pages/ChatBotPage";
 import Footer from "./components/Footer";
+import HomePage from "./pages/homePage";
+import MarketPage from "./pages/marketPage";
+
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -26,7 +29,8 @@ function AppLayout() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
-        </Routes>
+          <Route path="/market" element={<MarketPage />} />
+      </Routes>
       </div>
 
       {!hideNav && <Footer />}
