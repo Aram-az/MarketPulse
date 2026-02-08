@@ -1,69 +1,69 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
-import ChatBot from "../components/Chatbot"; // Assuming you have this
-import SidebarItem from "../components/SidebarItem"; // Assuming you have this
-import StatCard from "../components/StatCard"; // Assuming you have this
-import {
-  HourlyActivityChart,
-  PnLDistributionChart,
-} from "../components/AnalysisCharts";
+import ChatBot from "../components/ChatBot";
+import SidebarItem from "../components/SidebarItem";
+import StatCard from "../components/StatCard";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
+  PieChart,
+  TrendingUp,
+  AlertTriangle,
+  Download,
+  MoreHorizontal,
   UploadCloud,
+  Clock,
   Activity,
   MessageSquare,
+  X,
+  FileSpreadsheet,
+  ShieldCheck,
   FileText,
   ArrowUpRight,
+  ArrowDownRight,
   Loader2,
+  CheckCircle,
   Trash2,
-  BrainCircuit,
-  ShieldCheck,
-  FileSpreadsheet,
 } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { analysis, setAnalysis, clearAnalysis, refreshData, dataVersion } =
-    useData();
+  // We use addTrades to push parsed CSV data to the global context for the Journal
+  const {
+    analysis,
+    setAnalysis,
+    clearAnalysis,
+    addTrades,
+    removeFile,
+    clearData,
+    trades,
+  } = useData();
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [recentTrades, setRecentTrades] = useState<any[]>([]);
+  const [hoveredHour, setHoveredHour] = useState<{
+    hour: number;
+    count: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const dashboardFileRef = useRef<HTMLInputElement>(null);
-
-  // 1. Fetch Recent Trades (Populates the Table)
-  useEffect(() => {
-    if (analysis) {
-      // Logic: analysis exists, so DB is populated. Fetch rows.
-      fetch("http://localhost:8000/api/trades?page=1&limit=5")
-        .then((res) => res.json())
-        .then((data) => setRecentTrades(data.data || []))
-        .catch((err) => console.error("Failed to load recent trades", err));
-    } else {
-      setRecentTrades([]);
-    }
-  }, [analysis, dataVersion]);
 
   const handleImportClick = () => {
     dashboardFileRef.current?.click();
   };
 
-  const handleDeleteFile = async () => {
-    try {
-      await fetch("http://localhost:8000/api/clear", { method: "DELETE" });
-      clearAnalysis();
-      setImportedFile(null);
-      setIsChatOpen(false);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleDeleteFile = () => {
+    clearData();
+    clearAnalysis();
+    setImportedFile(null);
+    setIsChatOpen(false);
   };
 
-  // 2. Main Analysis Logic (Frontend -> Python)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -71,6 +71,11 @@ export default function Dashboard() {
       setIsLoading(true);
 
       try {
+        // 1. Local Parse (Populates Journal & Heatmap)
+        const text = await file.text();
+        const { heatmap, localStats } = processLocalCSV(text, file.name);
+
+        // 2. Python Backend (Risk Analysis)
         const formData = new FormData();
         formData.append("file", file);
 
@@ -80,53 +85,44 @@ export default function Dashboard() {
         });
 
         if (!res.ok) throw new Error("Analysis failed");
-        const data = await res.json(); // Returns { summary, biases } from analysis.py
-
-        refreshData(); // Triggers the table fetch in useEffect
-
-        // --- MAP PYTHON RESPONSE TO FRONTEND STATE ---
-        const stats = data.summary || {};
+        const data = await res.json();
         const biases = data.biases || {};
 
-        // Find the highest risk bias
+        // 3. Determine Risk
         let maxScore = 0;
-        let riskType = "Disciplined";
+        let riskType = "Calm Trading";
         let riskLevel = "Low";
 
-        const checkBias = (key: string, label: string) => {
-          // Safety check in case key is missing
-          if (biases[key] && biases[key].score > maxScore) {
-            maxScore = biases[key].score;
-            riskType = label;
-            riskLevel = biases[key].level; // "high", "medium", "low"
-          }
-        };
-
-        checkBias("overtrading", "Overtrading");
-        checkBias("loss_aversion", "Loss Aversion");
-        checkBias("revenge_trading", "Revenge Trading");
+        if (biases.overtrading && biases.overtrading.score > maxScore) {
+          maxScore = biases.overtrading.score;
+          riskType = "Overtrading";
+          riskLevel = biases.overtrading.level;
+        }
+        if (biases.loss_aversion && biases.loss_aversion.score > maxScore) {
+          maxScore = biases.loss_aversion.score;
+          riskType = "Loss Aversion";
+          riskLevel = biases.loss_aversion.level;
+        }
+        if (biases.revenge_trading && biases.revenge_trading.score > maxScore) {
+          maxScore = biases.revenge_trading.score;
+          riskType = "Revenge Trading";
+          riskLevel = biases.revenge_trading.level;
+        }
 
         if (maxScore < 20) {
-          riskType = "Disciplined";
+          riskType = "Calm Trading";
           riskLevel = "Low";
         }
 
-        // Extract Chart Data (Directly from analysis.py output)
-        const hourlyData = biases.overtrading?.charts?.hourly_trades || [];
-        const pnlData = biases.loss_aversion?.charts?.pnl_hist || [];
-
-        // Update Global Context
+        // 4. Update Context
         setAnalysis({
-          netPL: stats.pnl_total ? `$${stats.pnl_total.toFixed(2)}` : "$0.00",
-          winRate: biases.loss_aversion?.metrics?.win_rate
-            ? `${(biases.loss_aversion.metrics.win_rate * 100).toFixed(1)}%`
-            : "0%",
-          tradesPerHour: biases.overtrading?.metrics?.avg_trades_per_day
-            ? (biases.overtrading.metrics.avg_trades_per_day / 24).toFixed(1)
-            : "0",
-          totalTrades: stats.rows || 0,
+          netPL: localStats.netPL,
+          winRate: localStats.winRate,
+          tradesPerHour: localStats.tradesPerHour,
+          totalTrades: localStats.totalTrades,
+          heatmap: heatmap, // Use locally parsed heatmap
           riskType,
-          riskLevel: riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1), // Capitalize
+          riskLevel,
           riskScorePct: `${Math.round(maxScore)}%`,
           insightBody: `Analysis complete. Detected ${riskType} patterns.`,
           scores: {
@@ -134,22 +130,17 @@ export default function Dashboard() {
             lossAversion: Math.round(biases.loss_aversion?.score || 0),
             revenge: Math.round(biases.revenge_trading?.score || 0),
           },
-          charts: {
-            hourly: hourlyData,
-            pnlDistribution: pnlData,
-            winLossRatio: [], // Not used in this version but kept for type safety
-          },
         });
 
-        // Trigger AI Narrative (Optional)
-        generateAiNarrative(riskType, maxScore, file.name);
+        setAnalysis(newAnalysis);
+
+        generateAiNarrative(riskType, maxScore, file.name, newAnalysis);
       } catch (err) {
         console.error("Dashboard Error:", err);
-        alert("Failed to analyze file. Check console.");
-        setImportedFile(null);
+        alert("Failed to analyze file.");
       } finally {
         setIsLoading(false);
-        e.target.value = ""; // Reset input
+        e.target.value = "";
       }
     }
   };
@@ -158,6 +149,7 @@ export default function Dashboard() {
     riskType: string,
     score: number,
     filename: string,
+    currentAnalysisObj: any,
   ) => {
     setAiLoading(true);
     try {
@@ -167,49 +159,165 @@ export default function Dashboard() {
         body: JSON.stringify({ agentName: "Norman" }),
       });
       const initData = await initRes.json();
-
       if (initData.threadId) {
-        const prompt = `The user has a risk score of ${score}% for "${riskType}". Please write a concise 2-sentence behavioral analysis explaining this specific behavior and provide 1 actionable mitigation tip.`;
+        const prompt = `The user has a risk score of ${score}% for "${riskType}". Write a concise behavioral analysis and 1 mitigation tip.`;
         const formData = new FormData();
         formData.append("message", prompt);
         formData.append("threadId", initData.threadId);
-
         const chatRes = await fetch("http://localhost:5000/api/chat/message", {
           method: "POST",
           body: formData,
         });
         const chatData = await chatRes.json();
-
-        // FIX: Use 'analysis' directly, not 'prev' function
-        if (chatData.response && analysis) {
+        if (chatData.response) {
+          // FIX: Use the object directly, do not use (prev => ...)
           setAnalysis({
-            ...analysis,
+            ...currentAnalysisObj,
             insightBody: chatData.response,
           });
         }
       }
     } catch (err) {
       console.error(err);
-      // FIX: Use 'analysis' directly here too
-      if (analysis) {
-        setAnalysis({
-          ...analysis,
-          insightBody: "AI connection failed, but data analysis is accurate.",
-        });
-      }
     } finally {
       setAiLoading(false);
     }
   };
 
+  // --- LOCAL CSV PARSER (THE ENGINE) ---
+  const processLocalCSV = (csvText: string, filename: string) => {
+    try {
+      const lines = csvText.split("\n");
+      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+
+      const timeIdx = headers.findIndex(
+        (h) => h.includes("time") || h.includes("date"),
+      );
+      const plIdx = headers.findIndex(
+        (h) => h.includes("profit") || h.includes("p/l") || h.includes("pl"),
+      );
+      const symbolIdx = headers.findIndex(
+        (h) => h.includes("asset") || h.includes("symbol"),
+      );
+      const typeIdx = headers.findIndex(
+        (h) => h.includes("side") || h.includes("type"),
+      );
+      const qtyIdx = headers.findIndex(
+        (h) => h.includes("qty") || h.includes("quantity"),
+      );
+      const entryIdx = headers.findIndex((h) => h.includes("entry"));
+      const exitIdx = headers.findIndex((h) => h.includes("exit"));
+
+      const tIdx = timeIdx !== -1 ? timeIdx : 0;
+      const pIdx = plIdx !== -1 ? plIdx : 6;
+      const sIdx = symbolIdx !== -1 ? symbolIdx : 1;
+      const tyIdx = typeIdx !== -1 ? typeIdx : 2;
+
+      const hourCounts = Array(24).fill(0);
+      let minTime = Infinity;
+      let maxTime = 0;
+
+      const newTrades = lines
+        .slice(1)
+        .filter((line) => line.trim() !== "")
+        .map((line, index) => {
+          const cols = line.split(",");
+          const timestampRaw = cols[tIdx];
+          const symbol = cols[sIdx] || "UNK";
+          const type = cols[tyIdx] || "Buy";
+          const pl = parseFloat(cols[pIdx] || "0");
+          const qty = qtyIdx !== -1 ? parseFloat(cols[qtyIdx]) : 1;
+          const entryPrice = entryIdx !== -1 ? parseFloat(cols[entryIdx]) : 0;
+          const exitPrice = exitIdx !== -1 ? parseFloat(cols[exitIdx]) : 0;
+
+          let dateStr = "";
+          if (timestampRaw) {
+            let cleanTime = timestampRaw.replace(/\s+/g, " ").trim();
+            let date = new Date(cleanTime);
+            if (isNaN(date.getTime()))
+              date = new Date(cleanTime.replace(/-/g, "/"));
+
+            if (!isNaN(date.getTime())) {
+              const hour = date.getHours();
+              if (hour >= 0 && hour < 24) hourCounts[hour]++;
+              dateStr = date.toISOString().split("T")[0];
+
+              const time = date.getTime();
+              if (time < minTime) minTime = time;
+              if (time > maxTime) maxTime = time;
+            }
+          }
+
+          return {
+            id: Date.now() + index,
+            symbol,
+            type: type as "Buy" | "Sell",
+            pl,
+            plText:
+              pl >= 0 ? `+$${pl.toFixed(2)}` : `-$${Math.abs(pl).toFixed(2)}`,
+            status: pl < 0 ? "Risk" : "Good",
+            bias: "Analyzing...",
+            price: `$${entryPrice ? entryPrice.toFixed(2) : "0.00"}`,
+            quantity: qty,
+            entryPrice,
+            exitPrice,
+            date: dateStr,
+            source: filename,
+          };
+        });
+
+      if (newTrades.length > 0) {
+        addTrades(newTrades); // Push to Global Context
+
+        const totalPL = newTrades.reduce((acc, t) => acc + t.pl, 0);
+        const wins = newTrades.filter((t) => t.pl > 0).length;
+        const winRate = ((wins / newTrades.length) * 100).toFixed(1) + "%";
+
+        let durationHours = (maxTime - minTime) / (1000 * 60 * 60);
+        if (!durationHours || durationHours < 1) durationHours = 1;
+        const tph = (newTrades.length / durationHours).toFixed(1);
+
+        return {
+          heatmap: hourCounts,
+          localStats: {
+            netPL:
+              totalPL >= 0
+                ? `+$${totalPL.toFixed(2)}`
+                : `-$${Math.abs(totalPL).toFixed(2)}`,
+            winRate,
+            tradesPerHour: tph,
+            totalTrades: newTrades.length,
+          },
+        };
+      }
+      return {
+        heatmap: Array(24).fill(0),
+        localStats: {
+          netPL: "0",
+          winRate: "0",
+          tradesPerHour: "0",
+          totalTrades: 0,
+        },
+      };
+    } catch (err) {
+      console.error("Local CSV Parse Error:", err);
+      return {
+        heatmap: Array(24).fill(0),
+        localStats: {
+          netPL: "0",
+          winRate: "0",
+          tradesPerHour: "0",
+          totalTrades: 0,
+        },
+      };
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-black text-white font-sans selection:bg-[#DC143C] selection:text-white relative">
-      {/* SIDEBAR */}
-      <aside className="w-64 border-r border-[rgba(255,255,255,0.1)] flex flex-col hidden md:flex sticky top-0 h-screen">
+      <aside className="w-64 border-r border-[rgba(255,255,255,0.1)] flex flex-col hidden md:flex">
         <div className="h-20 flex items-center px-6 border-b border-[rgba(255,255,255,0.05)]">
-          <span className="font-bold text-xl tracking-tight flex items-center gap-2">
-            <BrainCircuit className="text-[#DC143C]" /> MarketPulse
-          </span>
+          <span className="font-bold text-xl tracking-tight">MarketPulse</span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
           <SidebarItem
@@ -229,12 +337,11 @@ export default function Dashboard() {
         </nav>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <header className="h-20 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between px-8 bg-black/50 backdrop-blur-sm sticky top-0 z-30">
           <div>
             <h1 className="text-xl font-semibold">Behavioral Dashboard</h1>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               Welcome back, {user?.name || "Trader"}.
             </p>
           </div>
@@ -246,18 +353,15 @@ export default function Dashboard() {
               accept=".csv,.xlsx"
               onChange={handleFileChange}
             />
-
-            {/* FILE UPLOAD STATE TOGGLE */}
             {analysis ? (
-              <div className="flex items-center gap-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-4 py-2 rounded-full animate-in fade-in slide-in-from-right-4">
+              <div className="flex items-center gap-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-4 py-2 rounded-full">
                 <FileText size={16} className="text-[#DC143C]" />
                 <span className="text-sm text-white font-medium truncate max-w-[150px]">
-                  {importedFile?.name || "Data Loaded"}
+                  {importedFile?.name || "Trades Loaded"}
                 </span>
                 <button
                   onClick={handleDeleteFile}
-                  className="ml-2 text-gray-400 hover:text-red-400 transition-colors"
-                  title="Close File"
+                  className="ml-2 text-muted hover:text-red-400"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -266,16 +370,14 @@ export default function Dashboard() {
               <button
                 onClick={handleImportClick}
                 disabled={isLoading}
-                className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
+                className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200"
               >
                 {isLoading ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <UploadCloud size={16} />
                 )}
-                <span>
-                  {isLoading ? "Crunching Numbers..." : "Import Data"}
-                </span>
+                <span>{isLoading ? "Analyzing..." : "Import Data"}</span>
               </button>
             )}
           </div>
@@ -283,35 +385,21 @@ export default function Dashboard() {
 
         <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-gray-800 pb-24">
           {!analysis ? (
-            /* EMPTY STATE */
-            <div className="h-[70vh] flex flex-col items-center justify-center text-center pb-20 animate-in fade-in zoom-in-95 duration-700">
-              <div
-                className="bg-[#111] p-10 rounded-3xl border border-dashed border-gray-700 hover:border-[#DC143C] transition-colors cursor-pointer group max-w-lg"
+            <div className="h-full flex flex-col items-center justify-center text-center pb-20">
+              <UploadCloud size={40} className="text-[#DC143C] mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">
+                No Trading Data
+              </h2>
+              <button
                 onClick={handleImportClick}
+                className="px-8 py-3 rounded-xl bg-[#DC143C] text-white font-bold mt-4"
               >
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-[#DC143C]/20 transition-colors">
-                  <UploadCloud
-                    size={32}
-                    className="text-gray-400 group-hover:text-[#DC143C] transition-colors"
-                  />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Upload Trading History
-                </h2>
-                <p className="text-gray-400 mb-6 text-sm leading-relaxed">
-                  Upload your CSV/Excel export. We will analyze your psychology
-                  using our <strong>Bias Detection Engine</strong>.
-                </p>
-                <button className="px-8 py-3 rounded-xl bg-[#DC143C] text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-900/20 w-full">
-                  Select File
-                </button>
-              </div>
+                Select File
+              </button>
             </div>
           ) : (
-            /* DASHBOARD CONTENT */
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* TOP STATS */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <StatCard
                   label="Net P/L"
                   value={analysis.netPL}
@@ -319,180 +407,151 @@ export default function Dashboard() {
                   isPositive={!analysis.netPL.startsWith("-")}
                 />
                 <StatCard
-                  label="Win Rate"
-                  value={analysis.winRate}
-                  change="Consistency"
-                  isAlert={parseFloat(analysis.winRate) < 30}
-                />
-                <StatCard
-                  label="Avg Trades/Hour"
+                  label="Trades / Hour"
                   value={analysis.tradesPerHour}
-                  change="Intensity"
-                  isAlert={parseFloat(analysis.tradesPerHour) > 5}
+                  change="Avg"
+                  isAlert={parseFloat(analysis.tradesPerHour) > 10}
                 />
                 <StatCard
-                  label="Primary Bias"
-                  value={analysis.riskType}
-                  change={analysis.riskLevel}
-                  isAlert={analysis.riskLevel.toLowerCase() === "high"}
+                  label="Risk Score"
+                  value={`${analysis.riskLevel} (${analysis.riskScorePct})`}
+                  change={analysis.riskType}
+                  isAlert={analysis.riskLevel === "High"}
                 />
               </div>
 
-              {/* MAIN CONTENT GRID */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                {/* AI INSIGHT */}
-                <div className="lg:col-span-2 bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Activity size={100} />
-                  </div>
+                <div className="lg:col-span-2 bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
                   <h3 className="font-semibold text-lg text-white mb-4 flex items-center gap-2">
-                    <Activity size={18} className="text-[#DC143C]" />
-                    AI Psychological Diagnosis
+                    <Activity size={18} className="text-[#DC143C]" /> AI
+                    Behavioral Analysis
                   </h3>
                   {aiLoading ? (
-                    <div className="h-20 flex items-center gap-3 text-gray-400">
-                      <Loader2
-                        className="animate-spin text-[#DC143C]"
-                        size={20}
-                      />
-                      <span className="animate-pulse">
-                        Analyzing behavioral patterns...
-                      </span>
-                    </div>
+                    <p className="text-muted italic flex items-center gap-2">
+                      <Loader2 className="animate-spin" size={14} /> Generating
+                      insights...
+                    </p>
                   ) : (
-                    <p className="text-gray-300 leading-relaxed text-lg font-light">
-                      {analysis.insightBody || "Analysis pending..."}
+                    <p className="text-gray-400 leading-relaxed">
+                      {analysis.insightBody}
                     </p>
                   )}
                 </div>
-
-                {/* BIAS METERS */}
-                <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 shadow-xl">
-                  <h3 className="font-semibold text-sm text-gray-400 mb-6 uppercase tracking-wider">
-                    Risk Profile Scores
+                <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                  <h3 className="font-semibold text-sm text-white mb-6">
+                    Risk Profile
                   </h3>
-                  <BiasMeter
-                    label="Overtrading (Discipline)"
-                    score={analysis.scores.overtrading}
-                    color="bg-blue-500"
-                  />
-                  <BiasMeter
-                    label="Loss Aversion (Fear)"
-                    score={analysis.scores.lossAversion}
-                    color="bg-yellow-500"
-                  />
-                  <BiasMeter
-                    label="Revenge Trading (Anger)"
-                    score={analysis.scores.revenge}
-                    color="bg-[#DC143C]"
-                  />
-                </div>
-              </div>
-
-              {/* CHARTS ROW (Using AnalysisCharts.tsx) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 relative group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                  {analysis.charts?.hourly && (
-                    <HourlyActivityChart data={analysis.charts.hourly} />
-                  )}
-                </div>
-                <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 relative group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                  {analysis.charts?.pnlDistribution && (
-                    <PnLDistributionChart
-                      data={analysis.charts.pnlDistribution}
+                  <div className="space-y-5">
+                    <BiasMeter
+                      label="Overtrading"
+                      score={analysis.scores.overtrading}
+                      color="bg-blue-500"
                     />
-                  )}
+                    <BiasMeter
+                      label="Loss Aversion"
+                      score={analysis.scores.lossAversion}
+                      color="bg-yellow-500"
+                    />
+                    <BiasMeter
+                      label="Revenge"
+                      score={analysis.scores.revenge}
+                      color="bg-[#DC143C]"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* RECENT TRADES TABLE */}
-              <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden">
-                <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">
-                    Analysis Sample (Last 5 Trades)
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 relative">
+                  <h3 className="font-semibold text-sm text-white mb-4 flex items-center gap-2">
+                    <Clock size={16} /> Trading Intensity
                   </h3>
-                  <Link
-                    to="/journal"
-                    className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors"
+                  <div
+                    className="grid grid-cols-6 gap-2"
+                    onMouseLeave={() => setHoveredHour(null)}
                   >
-                    View Full Journal <ArrowUpRight size={14} />
-                  </Link>
+                    {analysis.heatmap.map((count, i) => {
+                      const maxCount = Math.max(...analysis.heatmap, 1);
+                      const intensity = count / maxCount;
+                      let bgClass = "rgba(255,255,255,0.05)";
+                      if (count > 0) {
+                        if (intensity >= 0.7)
+                          bgClass = `rgba(220, 20, 60, ${0.4 + intensity * 0.6})`;
+                        else if (intensity >= 0.4)
+                          bgClass = `rgba(234, 179, 8, ${0.4 + intensity * 0.6})`;
+                        else
+                          bgClass = `rgba(16, 185, 129, ${0.3 + intensity * 0.7})`;
+                      }
+                      return (
+                        <div
+                          key={i}
+                          className="h-8 rounded-sm flex items-center justify-center text-[10px]"
+                          style={{
+                            background: bgClass,
+                            color: count > 0 ? "white" : "#666",
+                          }}
+                          title={`${count} trades`}
+                        >
+                          {i}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-white/5 text-xs uppercase tracking-wider text-white">
-                      <tr>
-                        <th className="px-6 py-4">Symbol</th>
-                        <th className="px-6 py-4">P/L</th>
-                        <th className="px-6 py-4">Quantity</th>
-                        <th className="px-6 py-4">Side</th>
-                        <th className="px-6 py-4">Price</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
-                      {recentTrades.length > 0 ? (
-                        recentTrades.map((trade, idx) => (
-                          <tr
-                            key={idx}
-                            className="hover:bg-white/5 transition-colors"
-                          >
+
+                <div className="lg:col-span-2 bg-[#0a0a0a] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Recent Trades</h3>
+                    <Link
+                      to="/journal"
+                      className="flex items-center gap-2 text-xs text-muted hover:text-white transition-colors"
+                    >
+                      View All <ArrowUpRight size={14} />
+                    </Link>
+                  </div>
+                  <div className="w-full overflow-x-auto">
+                    <table className="w-full text-left text-sm text-muted">
+                      <thead className="bg-white/5 text-xs uppercase tracking-wider text-white">
+                        <tr>
+                          <th className="px-6 py-4">Symbol</th>
+                          <th className="px-6 py-4">P/L</th>
+                          <th className="px-6 py-4">Side</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
+                        {trades.slice(0, 5).map((trade) => (
+                          <tr key={trade.id}>
                             <td className="px-6 py-4 text-white font-medium">
-                              {trade.asset || trade.symbol}
+                              {trade.symbol}
                             </td>
                             <td
-                              className={`px-6 py-4 font-bold ${trade.profit_loss >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                              className={`px-6 py-4 font-medium ${trade.pl >= 0 ? "text-green-400" : "text-red-400"}`}
                             >
-                              {trade.profit_loss >= 0
-                                ? `+$${trade.profit_loss.toFixed(2)}`
-                                : `-$${Math.abs(trade.profit_loss).toFixed(2)}`}
+                              {trade.plText}
                             </td>
-                            <td className="px-6 py-4">{trade.quantity}</td>
-                            <td className="px-6 py-4 uppercase text-xs font-bold">
-                              <span
-                                className={`px-2 py-1 rounded ${trade.side?.toLowerCase() === "buy" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400"}`}
-                              >
-                                {trade.side}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-xs font-mono">
-                              ${trade.entry_price}
-                            </td>
+                            <td className="px-6 py-4">{trade.type}</td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="p-8 text-center italic text-gray-600"
-                          >
-                            {isLoading
-                              ? "Loading data..."
-                              : "No recent trade data available."}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* CHATBOT */}
         <div className="fixed bottom-6 right-6 z-50">
           {isChatOpen && (
-            <div className="mb-4 w-96 h-[500px] bg-[#111] border border-white/20 rounded-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="mb-4 w-96 h-[500px] bg-[#111] border border-white/20 rounded-xl overflow-hidden">
               <ChatBot initialFile={importedFile} />
             </div>
           )}
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className="bg-[#DC143C] p-4 rounded-full text-white shadow-lg hover:bg-red-600 transition-transform hover:scale-105 active:scale-95 border border-red-500/50"
+            className="bg-[#DC143C] p-4 rounded-full text-white shadow-lg"
           >
-            {isChatOpen ? <ShieldCheck /> : <MessageSquare />}
+            <MessageSquare />
           </button>
         </div>
       </main>
@@ -500,21 +559,15 @@ export default function Dashboard() {
   );
 }
 
-// Simple Helper Component for the Meters
 function BiasMeter({ label, score, color }: any) {
   return (
-    <div className="mb-5">
-      <div className="flex justify-between text-xs mb-2">
-        <span className="text-gray-300 font-medium">{label}</span>
-        <span className={`${score > 50 ? "text-[#DC143C]" : "text-gray-400"}`}>
-          {score}%
-        </span>
+    <div className="mb-4">
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-gray-400">{label}</span>
+        <span className="text-white">{score}%</span>
       </div>
       <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} transition-all duration-1000 ease-out`}
-          style={{ width: `${score}%` }}
-        />
+        <div className={`h-full ${color}`} style={{ width: `${score}%` }} />
       </div>
     </div>
   );

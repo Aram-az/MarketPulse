@@ -1,39 +1,26 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-// --- TYPES ---
 export interface Trade {
   id: number;
   symbol: string;
-  type: string;
-  price: number;
+  type: "Buy" | "Sell";
+  price: string;
   pl: number;
-  quantity: number;
-  entry_price: number;
-  exit_price: number;
-  entry_date: string;
-  source_file?: string;
+  plText: string;
+  duration?: string;
+  status?: string;
+  bias?: string;
+  date?: string;
+  quantity?: number;
+  entryPrice?: number;
+  exitPrice?: number;
+  source?: string;
 }
 
-export interface AnalysisSummary {
-  netPL: string;
-  winRate: string;
-  tradesPerHour: string;
-  totalTrades: number;
+export interface AnalysisData {
   riskType: string;
-  riskScorePct: string;
-  riskLevel: string;
-  scores: {
-    overtrading: number;
-    lossAversion: number;
-    revenge: number;
-  };
-
+  riskScore: string;
   insightBody: string;
-  charts: {
-    hourly: { hour: number; trades: number }[];
-    pnlDistribution: { bin_start: number; bin_end: number; count: number }[];
-    winLossRatio: any[];
-  };
 }
 
 export interface Guardrail {
@@ -51,23 +38,44 @@ export interface JournalEntry {
   mood: string;
 }
 
+export interface AnalysisSummary {
+  netPL: string;
+  winRate: string;
+  tradesPerHour: string;
+  totalTrades: number;
+  riskType: string;
+  riskScorePct: string;
+  riskLevel: string;
+  scores: {
+    overtrading: number;
+    lossAversion: number;
+    revenge: number;
+  };
+  heatmap: number[];
+  insightBody: string;
+}
+
 interface DataContextType {
-  // Analysis State
+  trades: Trade[];
+  setTrades: (trades: Trade[]) => void;
+  addTrades: (newTrades: Trade[]) => void;
+  addTrade: (trade: Trade) => void;
+  clearData: () => void;
+  removeFile: (filename: string) => void;
+
+  analyses: Record<string, AnalysisData>;
+  addAnalysis: (source: string, data: AnalysisData) => void;
+
   analysis: AnalysisSummary | null;
   setAnalysis: (data: AnalysisSummary | null) => void;
   clearAnalysis: () => void;
 
-  // Data Versioning (The "Refresh Signal")
-  dataVersion: number;
-  refreshData: () => void;
-
-  // Guardrails
   guardrails: Guardrail[];
   toggleGuardrail: (id: string) => void;
   addGuardrail: (label: string) => void;
   deleteGuardrail: (id: string) => void;
+  updateGuardrailStatus: (id: string, status: "Adhered" | "Violated") => void;
 
-  // Journal
   journalEntries: JournalEntry[];
   addJournalEntry: (text: string, mood: string) => void;
 }
@@ -75,8 +83,10 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [analyses, setAnalyses] = useState<Record<string, AnalysisData>>({});
   const [analysis, setAnalysis] = useState<AnalysisSummary | null>(null);
-  const [dataVersion, setDataVersion] = useState(0); // This triggers refetches
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
 
   const [guardrails, setGuardrails] = useState<Guardrail[]>([
     {
@@ -99,15 +109,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     },
   ]);
 
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const addTrades = (newTrades: Trade[]) =>
+    setTrades((prev) => [...prev, ...newTrades]);
+  const addTrade = (trade: Trade) => setTrades((prev) => [trade, ...prev]);
+  const addAnalysis = (source: string, data: AnalysisData) =>
+    setAnalyses((prev) => ({ ...prev, [source]: data }));
 
-  // Call this whenever an upload or delete happens
-  const refreshData = () => setDataVersion((v) => v + 1);
-
-  const clearAnalysis = () => {
-    setAnalysis(null);
-    refreshData();
+  const removeFile = (filename: string) => {
+    setTrades((prev) => prev.filter((t) => t.source !== filename));
+    setAnalyses((prev) => {
+      const copy = { ...prev };
+      delete copy[filename];
+      return copy;
+    });
   };
+
+  const clearData = () => {
+    setTrades([]);
+    setAnalyses({});
+  };
+
+  const clearAnalysis = () => setAnalysis(null);
 
   const toggleGuardrail = (id: string) => {
     setGuardrails((prev) =>
@@ -132,6 +154,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setGuardrails((prev) => prev.filter((g) => g.id !== id));
   };
 
+  const updateGuardrailStatus = (
+    id: string,
+    status: "Adhered" | "Violated",
+  ) => {
+    setGuardrails((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, status } : g)),
+    );
+  };
+
   const addJournalEntry = (text: string, mood: string) => {
     setJournalEntries((prev) => [
       {
@@ -147,15 +178,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider
       value={{
+        trades,
+        setTrades,
+        addTrades,
+        addTrade,
+        clearData,
+        removeFile,
+        analyses,
+        addAnalysis,
         analysis,
         setAnalysis,
         clearAnalysis,
-        dataVersion,
-        refreshData,
         guardrails,
         toggleGuardrail,
         addGuardrail,
         deleteGuardrail,
+        updateGuardrailStatus,
         journalEntries,
         addJournalEntry,
       }}
