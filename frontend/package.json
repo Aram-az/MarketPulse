@@ -15,9 +15,11 @@
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "gsap": "^3.14.2",
+    "i18next": "^25.8.4",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^16.5.4",
     "react-router-dom": "^7.13.0",
     "tailwindcss": "^4.1.18"
   },

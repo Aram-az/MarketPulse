@@ -667,3 +667,23 @@ body {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.4);
 }
+
+/* App-driven reduce motion */
+.a11y-reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* App-driven larger text */
+.a11y-large-text {
+  font-size: 18px;
+}
+
+/* App-driven high contrast (light touch) */
+.a11y-high-contrast {
+  --a11y-border: rgba(255, 255, 255, 0.25);
+}
+.a11y-high-contrast .ring-white\/10 {
+  --tw-ring-color: var(--a11y-border) !important;
+}
