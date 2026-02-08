@@ -12,9 +12,10 @@ import {
   Brain,
   BarChart3,
   Shield,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 
-// --- TYPES ---
 type Sender = "user" | "bot";
 
 interface Message {
@@ -33,9 +34,9 @@ interface Agent {
   icon: React.ElementType;
   color: string;
   intro: string;
+  description: string;
 }
 
-// --- AGENT CONFIGURATION ---
 const AGENTS: Agent[] = [
   {
     id: "norman",
@@ -45,6 +46,8 @@ const AGENTS: Agent[] = [
     color: "#DC143C",
     intro:
       "I am Norman. I analyze your trading history for Overtrading, Loss Aversion, and Revenge Trading.",
+    description:
+      "Specializes in behavioral psychology. Detects emotional trading patterns.",
   },
   {
     id: "analyst",
@@ -54,6 +57,8 @@ const AGENTS: Agent[] = [
     color: "#3b82f6",
     intro:
       "I am Atlas. I focus on raw P/L data, win-rates, and statistical anomalies.",
+    description:
+      "Focuses on raw numbers. Calculates Sharpe ratio and volatility.",
   },
   {
     id: "coach",
@@ -63,13 +68,59 @@ const AGENTS: Agent[] = [
     color: "#10b981",
     intro:
       "I am Sage. I provide psychological strategies to help you maintain discipline.",
+    description: "Your risk manager. Suggests cooling-off periods.",
   },
 ];
 
-const MOCK_HISTORY = [
-  "TSLA Analysis - Oct 24",
-  "Overtrading Check - Oct 22",
-  "Monthly P/L Review",
+const MOCK_SESSIONS: Record<number, Message[]> = {
+  1: [
+    {
+      id: "h1-1",
+      text: "Analyze NVDA performance",
+      sender: "user",
+      timestamp: new Date("2023-10-26T10:00:00"),
+    },
+    {
+      id: "h1-2",
+      text: "NVDA shows a 15% drawdown. You held the loss for 4 hours, indicating Loss Aversion.",
+      sender: "bot",
+      timestamp: new Date("2023-10-26T10:00:05"),
+    },
+  ],
+  2: [
+    {
+      id: "h2-1",
+      text: "Am I overtrading?",
+      sender: "user",
+      timestamp: new Date("2023-10-25T14:30:00"),
+    },
+    {
+      id: "h2-2",
+      text: "Yes. You executed 12 trades in the last hour. Recommended limit is 5.",
+      sender: "bot",
+      timestamp: new Date("2023-10-25T14:30:05"),
+    },
+  ],
+  3: [
+    {
+      id: "h3-1",
+      text: "Portfolio Audit",
+      sender: "user",
+      timestamp: new Date("2023-10-24T09:15:00"),
+    },
+    {
+      id: "h3-2",
+      text: "Your Sharpe Ratio is 1.2. Risk adjusted returns are stable.",
+      sender: "bot",
+      timestamp: new Date("2023-10-24T09:15:10"),
+    },
+  ],
+};
+
+const CHAT_HISTORY_LIST = [
+  { id: 1, label: "NVDA Analysis", date: "Today" },
+  { id: 2, label: "Overtrading Check", date: "Yesterday" },
+  { id: 3, label: "Portfolio Audit", date: "Oct 24" },
 ];
 
 const SUGGESTED_PROMPTS = [
@@ -92,7 +143,9 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     initialFile || null,
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
+  const threadIdRef = useRef<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,16 +154,26 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
   }, [initialFile]);
 
   useEffect(() => {
-    setMessages([
-      {
-        id: "init-1",
-        text: activeAgent.intro,
-        sender: "bot",
-        timestamp: new Date(),
-      },
-    ]);
-    setIsMenuOpen(false);
+    if (messages.length === 0) {
+      setMessages([
+        {
+          id: "init-1",
+          text: activeAgent.intro,
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ]);
+    }
   }, [activeAgent]);
+
+  // Load History Session
+  const loadHistorySession = (sessionId: number) => {
+    const sessionMessages = MOCK_SESSIONS[sessionId];
+    if (sessionMessages) {
+      setMessages(sessionMessages);
+      setIsMenuOpen(false);
+    }
+  };
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -125,33 +188,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const processMessageToBackend = async (
-    userText: string,
-    file: File | null,
-  ) => {
-    return new Promise<string>((resolve) => {
-      setTimeout(() => {
-        if (file) {
-          resolve(
-            `I've analyzed **${file.name}**. I detected a 15% drop in win-rate during high-volatility hours, suggesting Impulse Trading.`,
-          );
-        } else if (activeAgent.id === "norman") {
-          resolve(
-            "Based on your history, I detected a pattern of **Overtrading** between 14:00 and 16:00 EST.",
-          );
-        } else if (activeAgent.id === "analyst") {
-          resolve(
-            "Your Sharpe Ratio is 1.2. Standard deviation indicates high volatility risks.",
-          );
-        } else {
-          resolve(
-            "I recommend the '2-Strike Rule': If you lose 2 trades in a row, step away for 30 minutes.",
-          );
-        }
-      }, 1500);
-    });
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() && !uploadedFile) return;
@@ -181,23 +217,41 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
     ]);
 
     try {
-      const responseText = await processMessageToBackend(
-        newUserMsg.text,
-        uploadedFile,
-      );
+      const formData = new FormData();
+      formData.append("message", newUserMsg.text);
+      if (threadIdRef.current) formData.append("threadId", threadIdRef.current);
+      if (uploadedFile) formData.append("file", uploadedFile);
+
+      const response = await fetch("http://localhost:5000/api/chat/message", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
       setMessages((prev) =>
         prev
           .filter((m) => m.id !== thinkingMsgId)
           .concat({
             id: Date.now().toString(),
-            text: responseText,
+            text: data.response || "Sorry, I couldn't process that request.",
             sender: "bot",
             timestamp: new Date(),
           }),
       );
+
       if (uploadedFile) setUploadedFile(null);
     } catch (error) {
-      console.error(error);
+      setMessages((prev) =>
+        prev
+          .filter((m) => m.id !== thinkingMsgId)
+          .concat({
+            id: Date.now().toString(),
+            text: "Error: Unable to connect to the server.",
+            sender: "bot",
+            timestamp: new Date(),
+          }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -244,23 +298,75 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       </div>
 
-      {/* MENU */}
       {isMenuOpen && (
-        <div className="absolute top-[60px] left-0 bottom-0 w-64 bg-[#111] border-r border-[rgba(255,255,255,0.1)] z-30 flex flex-col animate-in slide-in-from-left-5 duration-200">
+        <div className="absolute top-[60px] left-0 bottom-0 w-64 bg-[#111] border-r border-[rgba(255,255,255,0.1)] z-30 flex flex-col animate-in slide-in-from-left-5 duration-200 overflow-x-hidden">
           <div className="p-4 flex-1 overflow-y-auto">
-            <div className="mb-6">
+            <div className="mb-8">
               <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
                 Select Agent
               </h4>
               <div className="space-y-1">
                 {AGENTS.map((agent) => (
+                  <div key={agent.id} className="relative">
+                    <button
+                      onClick={() => {
+                        setActiveAgent(agent);
+                        setMessages([]);
+                        setIsMenuOpen(false);
+                      }}
+                      onMouseEnter={() => setHoveredAgent(agent.id)}
+                      onMouseLeave={() => setHoveredAgent(null)}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors duration-200 ${activeAgent.id === agent.id ? "bg-[rgba(255,255,255,0.1)] text-white border border-[rgba(255,255,255,0.1)]" : "text-muted hover:bg-[rgba(255,255,255,0.05)] hover:text-white"}`}
+                    >
+                      <agent.icon size={16} style={{ color: agent.color }} />
+                      <div className="text-left">
+                        <div className="font-medium">{agent.name}</div>
+                        <div className="text-[10px] opacity-60">
+                          {agent.role}
+                        </div>
+                      </div>
+                    </button>
+
+                    {hoveredAgent === agent.id && (
+                      <div className="absolute left-[105%] top-0 w-56 bg-[#0a0a0a] border border-[rgba(255,255,255,0.15)] p-3 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+                          <agent.icon
+                            size={14}
+                            style={{ color: agent.color }}
+                          />
+                          <span className="text-xs font-bold text-white">
+                            {agent.name}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted leading-relaxed">
+                          {agent.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
+                Chat History
+              </h4>
+              <div className="space-y-1">
+                {CHAT_HISTORY_LIST.map((item) => (
                   <button
-                    key={agent.id}
-                    onClick={() => setActiveAgent(agent)}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all ${activeAgent.id === agent.id ? "bg-[rgba(255,255,255,0.1)] text-white border border-[rgba(255,255,255,0.1)]" : "text-muted hover:text-white hover:bg-[rgba(255,255,255,0.05)]"}`}
+                    key={item.id}
+                    onClick={() => loadHistorySession(item.id)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-muted hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors text-left"
                   >
-                    <agent.icon size={16} style={{ color: agent.color }} />
-                    <div>{agent.name}</div>
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <MessageSquare
+                        size={14}
+                        className="opacity-50 flex-shrink-0"
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    <span className="text-[10px] opacity-40">{item.date}</span>
                   </button>
                 ))}
               </div>
@@ -269,7 +375,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         </div>
       )}
 
-      {/* CHAT AREA */}
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent bg-gradient-to-b from-[#0a0a0a] to-[#050505]"
@@ -316,25 +421,23 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         ))}
       </div>
 
-      {/* INPUT AREA - IMPROVED SPACING */}
-      <div className="bg-[#050505] p-4 border-t border-[rgba(255,255,255,0.1)] relative z-20 shrink-0">
-        {/* Suggested Chips */}
+      <div className="bg-[#050505] p-3 border-t border-[rgba(255,255,255,0.1)] relative z-20 shrink-0">
         {!isMenuOpen && messages.length < 3 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-3">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
                 key={prompt}
                 onClick={() => setInputValue(prompt)}
-                className="text-xs bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.7)] px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.1)] transition-colors flex items-center gap-1 whitespace-nowrap"
+                className="text-[10px] bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.7)] px-2 py-1 rounded-full border border-[rgba(255,255,255,0.1)] transition-colors flex items-center gap-1 whitespace-nowrap"
               >
-                <TrendingUp size={12} /> {prompt}
+                <TrendingUp size={10} /> {prompt}
               </button>
             ))}
           </div>
         )}
 
         {uploadedFile && (
-          <div className="flex items-center justify-between bg-[rgba(255,255,255,0.05)] px-3 py-2 rounded-lg mb-2 border border-[rgba(255,255,255,0.1)]">
+          <div className="flex items-center justify-between bg-[rgba(255,255,255,0.05)] px-3 py-1.5 rounded-lg mb-2 border border-[rgba(255,255,255,0.1)]">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-[#DC143C]" />
               <span className="text-xs text-white truncate max-w-[150px]">
@@ -351,7 +454,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
         )}
 
         <div className="flex gap-3 items-center">
-          {/* File Button */}
           <input
             type="file"
             ref={fileInputRef}
@@ -366,7 +468,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
             <Paperclip size={18} />
           </button>
 
-          {/* Text Area (Larger) */}
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -376,7 +477,6 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
             rows={1}
           />
 
-          {/* Send Button */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputValue.trim() && !uploadedFile)}
@@ -386,7 +486,11 @@ export default function ChatBot({ initialFile }: ChatBotProps) {
                 : "bg-[#DC143C] hover:bg-[#b01030] text-white"
             }`}
           >
-            <Send size={18} />
+            {isLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} />
+            )}
           </button>
         </div>
       </div>

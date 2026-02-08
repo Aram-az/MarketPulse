@@ -3,14 +3,19 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Button from "../components/Button";
+import { Brain, BarChart3, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
+
 const stockBackdrop = "/stockBackdrop.png";
 const dashboardMaster = "/dashboard-master.jpg";
+const aiVideo = "/AI_Speaking.mp4";
+
 gsap.registerPlugin(ScrollTrigger);
 
 const zoomPositions = [
-  { scale: 1.355, x: "24.5%", y: "-1%" }, // Index 0: Bias
-  { scale: 2.8, x: "-80%", y: "50%" }, // Index 1: Watchlist
-  { scale: 2.7, x: "-85%", y: "-53%" }, // Index 2: Chatbot
+  { scale: 1.355, x: "24.5%", y: "-1%" },
+  { scale: 2.8, x: "-80%", y: "50%" },
+  { scale: 2.7, x: "-85%", y: "-53%" },
 ];
 
 const features = [
@@ -31,6 +36,33 @@ const features = [
     title: "Market ChatBot",
     description:
       "Ask complex financial questions and get data-backed answers instantly from your AI analyst.",
+  },
+];
+
+const aiPersonas = [
+  {
+    id: "norman",
+    name: "Norman",
+    role: "Behavioral Psychologist",
+    desc: "Detects emotional trading patterns like revenge trading and loss aversion.",
+    icon: Brain,
+    color: "#DC143C",
+  },
+  {
+    id: "atlas",
+    name: "Atlas",
+    role: "Quantitative Analyst",
+    desc: "Analyzes raw P/L data, win-rates, and statistical anomalies in your portfolio.",
+    icon: BarChart3,
+    color: "#3b82f6",
+  },
+  {
+    id: "sage",
+    name: "Sage",
+    role: "Risk Manager",
+    desc: "Provides cooling-off strategies and discipline enforcement when you tilt.",
+    icon: Shield,
+    color: "#10b981",
   },
 ];
 
@@ -74,8 +106,10 @@ const testimonials = [
 
 export default function LandingPage() {
   const [activeFeature, setActiveFeature] = useState(-1);
+
   const mainRef = useRef<HTMLDivElement>(null);
   const dashboardImageRef = useRef<HTMLImageElement>(null);
+  const aiSectionRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
@@ -102,6 +136,26 @@ export default function LandingPage() {
           { y: 50, opacity: 0, duration: 0.8, ease: "power2.out" },
           "-=0.6",
         );
+
+      const aiTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: aiSectionRef.current,
+          start: "top 75%",
+          toggleActions: "play none none reverse",
+        },
+      });
+
+      aiTl.from(".ai-header", { y: 50, opacity: 0, duration: 0.8 }).from(
+        ".ai-card",
+        {
+          y: 100,
+          opacity: 0,
+          duration: 0.8,
+          stagger: 0.2,
+          ease: "power3.out",
+        },
+        "-=0.4",
+      );
     },
     { scope: mainRef },
   );
@@ -145,12 +199,15 @@ export default function LandingPage() {
           </h1>
           <h2
             className="body-strong text-primary"
-            style={{ margin: "16px auto", maxWidth: "700px", fontSize: "24px" }}
+            style={{ margin: "16px auto", maxWidth: "700px", fontSize: "18px" }}
           >
-            Trade markets, read news, and build your watchlist in one place.
+            Eliminate emotional trading with the world's first AI behavioral
+            coach.
           </h2>
           <div style={{ marginTop: "32px" }}>
-            <Button>Analyze Your Next Trade</Button>
+            <Link to="/dashboard">
+              <Button>Analyze Your Next Trade</Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -181,9 +238,7 @@ export default function LandingPage() {
               </button>
             )}
           </div>
-
           <div className="feature-grid gsap-grid">
-            {/* Feature Controls */}
             <div className="feature-list">
               {features.map((feature, index) => {
                 const isActive = activeFeature === index;
@@ -202,7 +257,6 @@ export default function LandingPage() {
                 );
               })}
             </div>
-
             <div className="feature-preview-box">
               <div className="preview-window-dots">
                 <div className="dot dot-red" />
@@ -252,6 +306,92 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section
+        ref={aiSectionRef}
+        style={{
+          background: "#050505",
+          padding: "100px 24px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "600px",
+            height: "600px",
+            background:
+              "radial-gradient(circle, rgba(220,20,60,0.15) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <div
+          className="container"
+          style={{
+            maxWidth: "1100px",
+            margin: "0 auto",
+            position: "relative",
+            zIndex: 2,
+          }}
+        >
+          <div
+            className="ai-header"
+            style={{ textAlign: "center", marginBottom: "64px" }}
+          >
+            <span
+              style={{
+                color: "#DC143C",
+                fontSize: "12px",
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                marginBottom: "12px",
+                display: "block",
+              }}
+            >
+              Meet The Team
+            </span>
+            <h2
+              className="display"
+              style={{
+                fontSize: "clamp(36px, 5vw, 64px)",
+                color: "white",
+                lineHeight: 1.1,
+              }}
+            >
+              Introducing Our AIs
+            </h2>
+            <p
+              className="text-muted"
+              style={{
+                fontSize: "18px",
+                maxWidth: "600px",
+                margin: "16px auto 0",
+              }}
+            >
+              Three specialized intelligence models working in harmony to
+              optimize your trading performance.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "32px",
+            }}
+          >
+            {aiPersonas.map((ai) => (
+              <AiCard key={ai.id} ai={ai} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="testimonial-section">
         <div
           className="testimonial-header"
@@ -270,7 +410,6 @@ export default function LandingPage() {
             Our AI tools have transformed our clients' strategies.
           </p>
         </div>
-
         <div className="marquee-container">
           <div className="marquee-content">
             {[...testimonials, ...testimonials].map((item, index) => (
@@ -282,6 +421,111 @@ export default function LandingPage() {
         <div className="fade-edge fade-edge-right" />
       </section>
     </main>
+  );
+}
+
+function AiCard({ ai }: { ai: any }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  return (
+    <div
+      className="ai-card"
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "24px",
+        padding: "8px",
+        overflow: "hidden",
+        transition: "transform 0.3s ease, border-color 0.3s ease",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-10px)";
+        e.currentTarget.style.borderColor = ai.color;
+        videoRef.current?.play();
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+        videoRef.current?.pause();
+      }}
+    >
+      <div
+        style={{
+          height: "240px",
+          borderRadius: "16px",
+          overflow: "hidden",
+          position: "relative",
+          background: "black",
+        }}
+      >
+        <video
+          ref={videoRef}
+          src={aiVideo}
+          muted
+          loop
+          playsInline
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.8,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `linear-gradient(to top, black 0%, ${ai.color} 100%)`,
+            opacity: 0.2,
+            mixBlendMode: "overlay",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(10px)",
+            border: `1px solid ${ai.color}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: ai.color,
+          }}
+        >
+          <ai.icon size={20} />
+        </div>
+      </div>
+
+      <div style={{ padding: "24px 16px" }}>
+        <h3 className="h3" style={{ color: "white", marginBottom: "4px" }}>
+          {ai.name}
+        </h3>
+        <p
+          style={{
+            color: ai.color,
+            fontSize: "12px",
+            fontWeight: "600",
+            textTransform: "uppercase",
+            marginBottom: "12px",
+          }}
+        >
+          {ai.role}
+        </p>
+        <p
+          className="body"
+          style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px" }}
+        >
+          {ai.desc}
+        </p>
+      </div>
+    </div>
   );
 }
 

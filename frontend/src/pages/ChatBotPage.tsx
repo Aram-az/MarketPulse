@@ -12,12 +12,9 @@ export default function ChatBotPage() {
         backgroundPosition: "center",
       }}
     >
-      {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/85 z-0" />
 
-      {/* Content Container */}
       <div className="relative z-10 w-full max-w-4xl flex flex-col items-center gap-8 mb-16">
-        {/* Header Section */}
         <div className="text-center">
           <h1 className="h1 text-white mb-2">AI Bias Detector</h1>
           <p className="text-muted text-lg">
@@ -25,8 +22,6 @@ export default function ChatBotPage() {
           </p>
         </div>
 
-        {/* ChatBot Component Container */}
-        {/* ADDED 'h-[600px]' below to fix the squashing issue */}
         <div className="w-full h-[600px] bg-[#0a0a0a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
           <ChatBot />
         </div>
