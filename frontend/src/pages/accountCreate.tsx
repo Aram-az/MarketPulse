@@ -1,208 +1,81 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTheme } from "../theme/ThemeContext";
-
-type Lang = "en" | "fr";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AuthOverlay from "../components/AuthOverlay";
 
 export default function AccountCreate() {
-  const navigate = useNavigate();
-  const { setTheme } = useTheme(); // keep context, but no toggle button
-
-  // Force dark mode for this page (and it will persist via ThemeContext localStorage)
-  useEffect(() => {
-    setTheme("dark");
-  }, [setTheme]);
-
-  const [lang, setLang] = useState<Lang>("en");
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const { signup } = useAuth();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
 
-  const t = useMemo(() => {
-    const en = {
-      languageToggle: "Français",
-      title: "Create your account",
-      subtitle: "Use your legal name and a valid email address.",
-      firstName: "First name",
-      lastName: "Last name",
-      email: "Email address",
-      password: "Password",
-      show: "Show",
-      hide: "Hide",
-      create: "Create account",
-      backToLogin: "Back to sign in",
-      helperPw: "At least 8 characters (use a mix of letters, numbers, and symbols).",
-    };
-
-    const fr = {
-      languageToggle: "English",
-      title: "Créer votre compte",
-      subtitle: "Utilisez votre nom légal et une adresse courriel valide.",
-      firstName: "Prénom",
-      lastName: "Nom",
-      email: "Adresse courriel",
-      password: "Mot de passe",
-      show: "Afficher",
-      hide: "Masquer",
-      create: "Créer le compte",
-      backToLogin: "Retour à la connexion",
-      helperPw: "Au moins 8 caractères (mélangez lettres, chiffres et symboles).",
-    };
-
-    return lang === "en" ? en : fr;
-  }, [lang]);
-
-  const inputClass =
-    "mt-2 w-full rounded-xl border border-black/10 bg-black px-4 py-3 text-sm text-white outline-none " +
-    "placeholder:text-white/40 focus:border-[#DC143C]/50 focus:shadow-[0_0_0_3px_rgba(220,20,60,0.12)] " +
-    "dark:border-white/10 dark:bg-black dark:text-white dark:placeholder:text-white/40 " +
-    "dark:focus:shadow-[0_0_0_3px_rgba(255,45,166,0.18)]";
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    signup(name, email, password);
+  };
 
   return (
-    <section className="min-h-screen bg-[#0b0f14] text-white" lang={lang}>
-      <div className="mx-auto flex min-h-screen max-w-[1400px] items-center justify-center px-6 py-12">
-        <div className="w-full max-w-xl rounded-xl bg-black px-8 py-10 shadow-sm ring-1 ring-black/10 dark:ring-white/10">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-28 overflow-hidden rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-[#c1c1c1]">
-                <img
-                  src="/nb-logo.png"
-                  alt="National Bank"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setLang((v) => (v === "en" ? "fr" : "en"))}
-              className="cursor-pointer text-sm text-sky-300 underline underline-offset-2 hover:text-sky-200"
-            >
-              {t.languageToggle}
-            </button>
-          </div>
-
-          <h1 className="mt-8 text-3xl font-semibold">{t.title}</h1>
-          <p className="mt-2 text-sm text-white/60">{t.subtitle}</p>
-
-          <form
-            className="mt-8 space-y-5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              navigate("/login");
-            }}
-          >
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium" htmlFor="firstName">
-                  {t.firstName}
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder={t.firstName}
-                  autoComplete="given-name"
-                  required
-                  minLength={2}
-                  maxLength={40}
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium" htmlFor="lastName">
-                  {t.lastName}
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder={t.lastName}
-                  autoComplete="family-name"
-                  required
-                  minLength={2}
-                  maxLength={40}
-                  className={inputClass}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium" htmlFor="email">
-                {t.email}
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                autoComplete="email"
-                required
-                maxLength={254}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium" htmlFor="newPassword">
-                {t.password}
-              </label>
-
-              <div className="relative mt-2">
-                <input
-                  id="newPassword"
-                  name="password"
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t.password}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  maxLength={128}
-                  className={inputClass.replace("mt-2 ", "") + " pr-16"}
-                />
-
-                <button
-                  type="button"
-                  aria-pressed={showPw}
-                  onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-white/60 hover:bg-white/10"
-                  title={showPw ? t.hide : t.show}
-                >
-                  <span className="text-xs">{showPw ? t.hide : t.show}</span>
-                </button>
-              </div>
-
-              <div className="mt-2 text-xs text-white/55">{t.helperPw}</div>
-            </div>
-
-            <button type="submit" className="btn-futuristic-red w-full py-3">
-              {t.create}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-semibold text-white/75 hover:bg-white/10"
-            >
-              {t.backToLogin}
-            </button>
-          </form>
+    <AuthOverlay title="Create Account">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase">
+            Full Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#DC143C] transition-colors"
+            placeholder="John Doe"
+            required
+          />
         </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase">
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#DC143C] transition-colors"
+            placeholder="trader@example.com"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase">
+            Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#DC143C] transition-colors"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-[#DC143C] hover:bg-[#b01030] text-white font-semibold py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(220,20,60,0.3)] hover:shadow-[0_0_30px_rgba(220,20,60,0.5)] mt-2"
+        >
+          Create Account
+        </button>
+      </form>
+
+      <div className="mt-6 text-center text-sm text-muted">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="text-white hover:text-[#DC143C] font-medium transition-colors"
+        >
+          Sign In
+        </Link>
       </div>
-    </section>
+    </AuthOverlay>
   );
 }

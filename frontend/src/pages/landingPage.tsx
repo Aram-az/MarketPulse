@@ -1,22 +1,16 @@
 import { useState, useRef } from "react";
-// import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Button from "../components/Button";
-
-// --- IMAGES ---
 const stockBackdrop = "/stockBackdrop.png";
 const dashboardMaster = "/dashboard-master.jpg";
-
 gsap.registerPlugin(ScrollTrigger);
 
-// --- ZOOM CONFIGURATION ---
-// ADJUSTMENT INSTRUCTIONS BELOW
 const zoomPositions = [
-  { scale: 2.3, x: "35%", y: "25%" }, // Index 0: Bias (Top Left)
-  { scale: 2.3, x: "-35%", y: "25%" }, // Index 1: Watchlist (Top Right)
-  { scale: 2.3, x: "-35%", y: "-35%" }, // Index 2: Chatbot (Bottom Right)
+  { scale: 2.3, x: "35%", y: "25%" }, // Index 0: Bias
+  { scale: 2.3, x: "-35%", y: "25%" }, // Index 1: Watchlist
+  { scale: 2.3, x: "-35%", y: "-35%" }, // Index 2: Chatbot
 ];
 
 const features = [
@@ -112,7 +106,6 @@ export default function LandingPage() {
     { scope: mainRef },
   );
 
-  // --- ZOOM ANIMATION ---
   useGSAP(() => {
     if (dashboardImageRef.current) {
       if (activeFeature === -1) {
@@ -138,7 +131,6 @@ export default function LandingPage() {
 
   return (
     <main ref={mainRef}>
-      {/* HERO SECTION */}
       <section
         className="hero-section"
         style={{ backgroundImage: `url(${stockBackdrop})` }}
@@ -163,7 +155,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* DASHBOARD SECTION */}
       <section className="features-section">
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div className="features-header">
@@ -212,7 +203,6 @@ export default function LandingPage() {
               })}
             </div>
 
-            {/* Zoomable Image */}
             <div className="feature-preview-box">
               <div className="preview-window-dots">
                 <div className="dot dot-red" />
@@ -262,9 +252,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
       <section className="testimonial-section">
-        {/* FIX: Removed 'container' class, applied Flex centering, removed Padding */}
         <div
           className="testimonial-header"
           style={{
@@ -297,7 +285,6 @@ export default function LandingPage() {
   );
 }
 
-// COMPONENT: TestimonialCard
 function TestimonialCard({ item }: { item: (typeof testimonials)[0] }) {
   return (
     <div className="testimonial-card">
