@@ -5,8 +5,8 @@ import ChatBot from "../components/Chatbot";
 import {
   LayoutDashboard,
   PieChart,
-  TrendingUp, // Used in StatCard
-  AlertTriangle, // Used in StatCard
+  TrendingUp,
+  AlertTriangle,
   Download,
   MoreHorizontal,
   UploadCloud,
@@ -14,13 +14,12 @@ import {
   Activity,
   MessageSquare,
   X,
-  ArrowUpRight, // Used in StatCard
-  ArrowDownRight, // Used in StatCard
+  ArrowUpRight,
+  ArrowDownRight,
   FileSpreadsheet,
   ShieldCheck,
 } from "lucide-react";
 
-// --- MOCK DATA ---
 const RECENT_TRADES = [
   {
     id: 1,
