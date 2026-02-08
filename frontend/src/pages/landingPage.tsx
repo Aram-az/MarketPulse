@@ -8,9 +8,9 @@ const dashboardMaster = "/dashboard-master.jpg";
 gsap.registerPlugin(ScrollTrigger);
 
 const zoomPositions = [
-  { scale: 2.3, x: "35%", y: "25%" }, // Index 0: Bias
-  { scale: 2.3, x: "-35%", y: "25%" }, // Index 1: Watchlist
-  { scale: 2.3, x: "-35%", y: "-35%" }, // Index 2: Chatbot
+  { scale: 1.355, x: "24.5%", y: "-1%" }, // Index 0: Bias
+  { scale: 2.8, x: "-80%", y: "50%" }, // Index 1: Watchlist
+  { scale: 2.7, x: "-85%", y: "-53%" }, // Index 2: Chatbot
 ];
 
 const features = [
