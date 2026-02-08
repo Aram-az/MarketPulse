@@ -6,27 +6,31 @@ import StyleGuide from "./pages/StyleGuide";
 import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
+import ChatBotPage from "./pages/ChatBotPage";
+import Footer from "./components/Footer";
 
 function AppLayout() {
   const { pathname } = useLocation();
-  // Hide navbar on login/signup pages
   const hideNav = pathname === "/login" || pathname === "/account/create";
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       {!hideNav && <NavBar />}
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/style" element={<StyleGuide />} />
-        <Route path="/account/create" element={<AccountCreate />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/watchlist" element={<WatchlistPage />} />
 
-        {/* 2. Add the Route here */}
-        <Route path="/chatbot" element={<ChatBot />} />
-      </Routes>
-    </>
+      <div className="flex-1">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/style" element={<StyleGuide />} />
+          <Route path="/account/create" element={<AccountCreate />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/watchlist" element={<WatchlistPage />} />
+          <Route path="/chatbot" element={<ChatBotPage />} />
+        </Routes>
+      </div>
+
+      {!hideNav && <Footer />}
+    </div>
   );
 }
 

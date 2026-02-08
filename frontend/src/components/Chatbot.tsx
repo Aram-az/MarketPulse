@@ -5,11 +5,14 @@ import {
   Bot,
   User,
   FileText,
-  AlertTriangle,
   TrendingUp,
   X,
+  Menu,
+  History,
+  Brain,
+  BarChart3,
+  Shield,
 } from "lucide-react";
-import "../index.css"; // Ensure your Tailwind/CSS is imported
 
 // --- TYPES ---
 type Sender = "user" | "bot";
@@ -23,13 +26,51 @@ interface Message {
   attachmentName?: string;
 }
 
-// --- INITIAL STATE ---
-const INITIAL_MESSAGE: Message = {
-  id: "init-1",
-  text: "Hello! I am your MarketPulse Bias Detector. Upload your trading history (CSV/Excel) and I can analyze your patterns for Overtrading, Loss Aversion, and Revenge Trading.",
-  sender: "bot",
-  timestamp: new Date(),
-};
+interface Agent {
+  id: string;
+  name: string;
+  role: string;
+  icon: React.ElementType;
+  color: string;
+  intro: string;
+}
+
+// --- AGENT CONFIGURATION ---
+const AGENTS: Agent[] = [
+  {
+    id: "norman",
+    name: "Norman",
+    role: "Bias Detector AI",
+    icon: Brain,
+    color: "#DC143C",
+    intro:
+      "I am Norman. Upload your trading history and I will detect Overtrading, Loss Aversion, and Revenge Trading patterns.",
+  },
+  {
+    id: "analyst",
+    name: "Atlas",
+    role: "Data Analyst",
+    icon: BarChart3,
+    color: "#3b82f6",
+    intro:
+      "I am Atlas. I focus on raw P/L data, win-rates, and statistical anomalies in your trading performance.",
+  },
+  {
+    id: "coach",
+    name: "Sage",
+    role: "Mitigation Strategy",
+    icon: Shield,
+    color: "#10b981",
+    intro:
+      "I am Sage. I provide psychological strategies and cooling-off rules to help you maintain discipline.",
+  },
+];
+
+const MOCK_HISTORY = [
+  "TSLA Analysis - Oct 24",
+  "Overtrading Check - Oct 22",
+  "Monthly P/L Review",
+];
 
 const SUGGESTED_PROMPTS = [
   "Analyze for Overtrading",
@@ -39,53 +80,65 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function ChatBot() {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  // State
+  const [activeAgent, setActiveAgent] = useState<Agent>(AGENTS[0]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Refs
+  const chatContainerRef = useRef<HTMLDivElement>(null); // Ref for the SCROLLABLE container
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom
+  // Initialize Chat when agent changes
+  useEffect(() => {
+    setMessages([
+      {
+        id: "init-1",
+        text: activeAgent.intro,
+        sender: "bot",
+        timestamp: new Date(),
+      },
+    ]);
+    setIsMenuOpen(false);
+  }, [activeAgent]);
+
+  // FIX #1: Scroll logic that DOES NOT jump the whole page
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      const { scrollHeight, clientHeight } = chatContainerRef.current;
+      // Smoothly scroll the container to the bottom
+      chatContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // --- BACKEND INTEGRATION PLACEHOLDER ---
+  // --- BACKEND MOCK ---
   const processMessageToBackend = async (
     userText: string,
     file: File | null,
   ) => {
-    // TODO: REPLACE THIS WITH YOUR ACTUAL API CALL
-    // Example:
-    // const formData = new FormData();
-    // formData.append("message", userText);
-    // if (file) formData.append("file", file);
-    // const response = await fetch("http://localhost:5000/api/analyze", { method: "POST", body: formData });
-
-    // Simulating API Delay
     return new Promise<string>((resolve) => {
       setTimeout(() => {
-        if (file && userText.includes("upload")) {
+        if (activeAgent.id === "norman") {
           resolve(
-            `I've received **${file.name}**. I'm analyzing 2,400 trade records...\n\n**Preliminary Insight:**\nI detected a pattern of **Overtrading** between 14:00 and 16:00 EST. Your win rate drops by 15% during high-volatility periods.`,
+            "Based on your history, I detected a pattern of **Overtrading** between 14:00 and 16:00 EST. Your win rate drops by 15% during high-volatility periods.",
           );
-        } else if (userText.includes("Overtrading")) {
+        } else if (activeAgent.id === "analyst") {
           resolve(
-            "Based on your history, your average trades per hour spikes after a loss greater than 2%. This suggests reactive trading. I recommend a cooling-off period rule of 15 minutes after significant drawdowns.",
-          );
-        } else if (userText.includes("Revenge")) {
-          resolve(
-            "I found 3 instances where you increased position size by 200% immediately following a loss streak. This is a classic **Revenge Trading** signal. Be careful—this wipes out gains quickly.",
+            "Your Sharpe Ratio for the selected period is 1.2. The standard deviation of your daily returns suggests higher volatility than your defined risk profile.",
           );
         } else {
           resolve(
-            "I'm analyzing your market data against behavioral finance models. Could you clarify if you want me to look at entry/exit timing specifically?",
+            "To mitigate this, I recommend the '2-Strike Rule': If you lose 2 trades in a row, step away from the terminal for 30 minutes to reset your mental state.",
           );
         }
       }, 1500);
@@ -108,13 +161,12 @@ export default function ChatBot() {
     setInputValue("");
     setIsLoading(true);
 
-    // Create a temporary "thinking" bot message
     const thinkingMsgId = "thinking-" + Date.now();
     setMessages((prev) => [
       ...prev,
       {
         id: thinkingMsgId,
-        text: "Analyzing behavioral patterns...",
+        text: `${activeAgent.name} is thinking...`,
         sender: "bot",
         timestamp: new Date(),
         isThinking: true,
@@ -122,13 +174,10 @@ export default function ChatBot() {
     ]);
 
     try {
-      // Call Backend
       const responseText = await processMessageToBackend(
         newUserMsg.text,
         uploadedFile,
       );
-
-      // Remove thinking message and add real response
       setMessages((prev) =>
         prev
           .filter((m) => m.id !== thinkingMsgId)
@@ -139,20 +188,9 @@ export default function ChatBot() {
             timestamp: new Date(),
           }),
       );
-
-      // Clear file after sending
       if (uploadedFile) setUploadedFile(null);
     } catch (error) {
-      setMessages((prev) =>
-        prev
-          .filter((m) => m.id !== thinkingMsgId)
-          .concat({
-            id: Date.now().toString(),
-            text: "Error: Unable to connect to the analysis engine. Please check the backend connection.",
-            sender: "bot",
-            timestamp: new Date(),
-          }),
-      );
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -171,46 +209,124 @@ export default function ChatBot() {
     }
   };
 
+  const AgentIcon = activeAgent.icon;
+
   return (
-    <div className="flex flex-col h-[600px] w-full max-w-4xl mx-auto bg-[#0a0a0a] border border-[rgba(255,255,255,0.12)] rounded-2xl overflow-hidden shadow-2xl">
-      {/* HEADER */}
-      <div className="bg-[#111] p-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-black flex items-center justify-center">
-            <Bot size={20} color="white" />
+    <div className="relative flex flex-col h-[600px] w-full max-w-4xl mx-auto bg-[#0a0a0a] border border-[rgba(255,255,255,0.12)] rounded-2xl overflow-hidden shadow-2xl">
+      {/* --- HEADER (Fixed Height for stability) --- */}
+      <div className="h-[72px] bg-[#111] px-4 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between relative z-20 shrink-0">
+        {/* LEFT: Menu Button */}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className={`p-2 rounded-lg transition-colors ${isMenuOpen ? "bg-[rgba(255,255,255,0.15)] text-white" : "text-muted hover:text-white hover:bg-[rgba(255,255,255,0.1)]"}`}
+        >
+          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        {/* RIGHT: Profile Icon & Hover Tooltip */}
+        <div className="group relative flex items-center cursor-help">
+          {/* Tooltip */}
+          <div className="absolute right-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap mr-2">
+            <div className="bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-lg shadow-xl">
+              <span className="text-xs text-white font-medium">
+                {activeAgent.name}, the {activeAgent.role}
+              </span>
+            </div>
           </div>
-          <div>
-            <h3 className="text-white font-semibold text-sm">
-              Bias Detector AI
-            </h3>
-            <p className="text-[11px] text-[rgba(255,255,255,0.5)] flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Online • Ready for CSV/Excel
-            </p>
+
+          {/* Profile Avatar */}
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-105"
+            style={{
+              background: `linear-gradient(135deg, ${activeAgent.color} 0%, #000 100%)`,
+            }}
+          >
+            <AgentIcon size={20} color="white" />
           </div>
         </div>
-        <div className="flex gap-2">{/* Optional Top Actions */}</div>
       </div>
 
-      {/* CHAT AREA */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+      {/* --- MENU DROPDOWN --- */}
+      {/* FIX #2: Positioned exactly under the 72px header */}
+      {isMenuOpen && (
+        <div
+          className="absolute top-[72px] left-0 bottom-0 w-64 bg-[#111] border-r border-[rgba(255,255,255,0.1)] z-30 flex flex-col animate-in slide-in-from-left-5 duration-200"
+          style={{ height: "calc(100% - 72px)" }} // Ensures it doesn't overflow bottom
+        >
+          <div className="p-4 flex-1 overflow-y-auto">
+            {/* Agents Section */}
+            <div className="mb-6">
+              <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
+                Select Agent
+              </h4>
+              <div className="space-y-1">
+                {AGENTS.map((agent) => (
+                  <button
+                    key={agent.id}
+                    onClick={() => setActiveAgent(agent)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all ${activeAgent.id === agent.id ? "bg-[rgba(255,255,255,0.1)] text-white border border-[rgba(255,255,255,0.1)]" : "text-muted hover:text-white hover:bg-[rgba(255,255,255,0.05)]"}`}
+                  >
+                    <agent.icon size={16} style={{ color: agent.color }} />
+                    <div className="text-left">
+                      <div className="font-medium">{agent.name}</div>
+                      <div className="text-[10px] opacity-60">{agent.role}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* History Section */}
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-3 pl-2">
+                Recent History
+              </h4>
+              <div className="space-y-1">
+                {MOCK_HISTORY.map((item, i) => (
+                  <button
+                    key={i}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors text-left"
+                  >
+                    <History size={14} className="opacity-50" />
+                    <span className="truncate">{item}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-[rgba(255,255,255,0.08)] bg-[#0d0d0d]">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              System Operational
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- CHAT AREA --- */}
+      {/* Attached the ref here for scoped scrolling */}
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent bg-gradient-to-b from-[#0a0a0a] to-[#050505]"
+      >
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex gap-3 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}
           >
-            {/* Avatar */}
+            {/* Message Avatar */}
             <div
               className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                 msg.sender === "user"
                   ? "bg-[rgba(255,255,255,0.1)]"
-                  : "bg-[rgba(220,20,60,0.1)] border border-[rgba(220,20,60,0.3)]"
+                  : "bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)]"
               }`}
             >
               {msg.sender === "user" ? (
                 <User size={16} className="text-white" />
               ) : (
-                <Bot size={16} className="text-[#DC143C]" />
+                <AgentIcon size={16} style={{ color: activeAgent.color }} />
               )}
             </div>
 
@@ -225,7 +341,6 @@ export default function ChatBot() {
                     : "bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.9)] rounded-tl-sm"
                 } ${msg.isThinking ? "animate-pulse" : ""}`}
               >
-                {/* File Attachment Indicator */}
                 {msg.attachmentName && (
                   <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[rgba(255,255,255,0.2)]">
                     <FileText size={14} />
@@ -234,12 +349,8 @@ export default function ChatBot() {
                     </span>
                   </div>
                 )}
-
-                {/* Text Content (supports basic formatting) */}
                 <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
               </div>
-
-              {/* Timestamp */}
               <span className="text-[10px] text-[rgba(255,255,255,0.3)] mt-1 px-1">
                 {msg.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -249,13 +360,12 @@ export default function ChatBot() {
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT AREA */}
-      <div className="bg-[#050505] p-4 border-t border-[rgba(255,255,255,0.1)]">
+      {/* --- INPUT AREA --- */}
+      <div className="bg-[#050505] p-4 border-t border-[rgba(255,255,255,0.1)] relative z-20 shrink-0">
         {/* Suggested Chips */}
-        {messages.length < 3 && (
+        {!isMenuOpen && messages.length < 3 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
@@ -277,9 +387,6 @@ export default function ChatBot() {
               <span className="text-sm text-white truncate max-w-[200px]">
                 {uploadedFile.name}
               </span>
-              <span className="text-xs text-[rgba(255,255,255,0.4)]">
-                ({(uploadedFile.size / 1024).toFixed(1)} KB)
-              </span>
             </div>
             <button
               onClick={() => setUploadedFile(null)}
@@ -291,7 +398,6 @@ export default function ChatBot() {
         )}
 
         <div className="flex gap-2 items-end">
-          {/* File Upload Button */}
           <input
             type="file"
             ref={fileInputRef}
@@ -302,28 +408,21 @@ export default function ChatBot() {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-3 rounded-xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.6)] hover:text-white transition-colors border border-[rgba(255,255,255,0.1)]"
-            title="Upload Trading History (CSV/Excel)"
           >
             <Paperclip size={20} />
           </button>
 
-          {/* Text Input */}
           <div className="flex-1 relative">
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={
-                uploadedFile
-                  ? "Ask about this file..."
-                  : "Type a message or upload trading data..."
-              }
+              placeholder={`Message ${activeAgent.name}...`}
               className="w-full bg-[#1a1a1a] text-white rounded-xl pl-4 pr-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#DC143C] border border-[rgba(255,255,255,0.1)] resize-none h-[48px] max-h-[120px] scrollbar-hide text-sm"
               rows={1}
             />
           </div>
 
-          {/* Send Button */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputValue.trim() && !uploadedFile)}
@@ -336,11 +435,6 @@ export default function ChatBot() {
             <Send size={20} />
           </button>
         </div>
-
-        <p className="text-[10px] text-[rgba(255,255,255,0.3)] mt-2 text-center">
-          <AlertTriangle size={10} className="inline mb-[2px] mr-1" />
-          AI can make mistakes. Please verify important financial data.
-        </p>
       </div>
     </div>
   );
