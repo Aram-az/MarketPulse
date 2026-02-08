@@ -9,6 +9,7 @@ import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
 import ChatBotPage from "./pages/ChatBotPage";
 import Footer from "./components/Footer";
+import MarketPage from "./pages/marketPage";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -41,6 +42,7 @@ function AppLayout() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
+          <Route path="/market" element={<MarketPage />} />
 
           <Route
             path="/dashboard"
