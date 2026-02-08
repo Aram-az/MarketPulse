@@ -13,6 +13,8 @@ import MarketPage from "./pages/marketPage";
 import Dashboard from "./pages/Dashboard";
 import NewsPage from "./pages/NewsPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import "./i18n";
+
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuth();

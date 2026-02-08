@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import { Bell, LogOut, Settings, User as UserIcon } from "lucide-react";
 import "../index.css";
 
-const links = [
-  { label: "ChatBot", href: "/chatbot" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "News", href: "/news" },
-  { label: "Watchlist", href: "/watchlist" },
-  { label: "Markets", href: "/market" },
-];
-
 const NavBar = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const links = [
+    { label: t("nav.chatbot"), href: "/chatbot" },
+    { label: t("nav.dashboard"), href: "/dashboard" },
+    { label: t("nav.news"), href: "/news" },
+    { label: t("nav.watchlist"), href: "/watchlist" },
+    { label: t("nav.markets"), href: "/market" },
+  ];
 
   return (
     <header className="siteHeader relative z-50">
@@ -28,7 +30,7 @@ const NavBar = () => {
         {/* Nav Links */}
         <ul className="navbar flex gap-8">
           {links.map((link) => (
-            <li key={link.label} className="navbar_item">
+            <li key={link.href} className="navbar_item">
               <Link
                 className="navbar_link text-sm font-medium text-gray-300 hover:text-white transition-colors"
                 to={link.href}
@@ -43,13 +45,11 @@ const NavBar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              {/* Notification Bell (Kept in Navbar, removed from Dashboard) */}
               <button className="relative p-2 text-gray-400 hover:text-white transition-colors">
                 <Bell size={20} />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#DC143C] rounded-full ring-2 ring-black" />
               </button>
 
-              {/* Profile Icon Trigger */}
               <div className="relative">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -66,7 +66,6 @@ const NavBar = () => {
                   )}
                 </button>
 
-                {/* Dropdown Menu */}
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-3 w-56 bg-[#111] border border-gray-800 rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-800">
@@ -84,14 +83,15 @@ const NavBar = () => {
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <Settings size={16} /> Settings
+                        <Settings size={16} /> {t("nav.settings")}
                       </Link>
+
                       <Link
                         to="/dashboard"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <UserIcon size={16} /> Dashboard
+                        <UserIcon size={16} /> {t("nav.dashboard")}
                       </Link>
                     </div>
 
@@ -103,7 +103,7 @@ const NavBar = () => {
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors text-left"
                       >
-                        <LogOut size={16} /> Log Out
+                        <LogOut size={16} /> {t("nav.logout")}
                       </button>
                     </div>
                   </div>
@@ -112,13 +112,12 @@ const NavBar = () => {
             </>
           ) : (
             <Link to="/login">
-              <Button>Login</Button>
+              <Button>{t("nav.login")}</Button>
             </Link>
           )}
         </div>
       </nav>
 
-      {/* Close menu when clicking outside */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 z-40"

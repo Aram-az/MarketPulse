@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Twitter, Linkedin, Github } from "lucide-react";
 
 export default function Footer() {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="bg-black border-t border-[rgba(255,255,255,0.1)] py-12 px-6 mt-auto">
       <div className="container max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Brand Column */}
         <div className="col-span-1 md:col-span-1">
           <Link to="/" className="flex items-center gap-2 mb-4">
             <img src="/logo.svg" alt="Logo" width={32} height={32} />
@@ -15,71 +16,65 @@ export default function Footer() {
               MarketPulse
             </span>
           </Link>
+
           <p className="text-muted text-sm leading-relaxed">
-            AI-powered behavioral finance tools for the modern trader. Detect
-            bias, manage risk, and trade smarter.
+            {t("footer.tagline")}
           </p>
+
           <div className="flex gap-4 mt-6">
             <SocialLink href="#" icon={<Twitter size={18} />} label="Twitter" />
-            <SocialLink
-              href="#"
-              icon={<Linkedin size={18} />}
-              label="LinkedIn"
-            />
+            <SocialLink href="#" icon={<Linkedin size={18} />} label="LinkedIn" />
             <SocialLink href="#" icon={<Github size={18} />} label="GitHub" />
           </div>
         </div>
 
-        {/* Links Column 1: Product */}
         <div>
-          <h4 className="text-white font-semibold mb-4">Product</h4>
+          <h4 className="text-white font-semibold mb-4">{t("footer.product")}</h4>
           <ul className="space-y-2 text-sm text-muted">
             <li>
-              <FooterLink to="/chatbot">Bias Detector AI</FooterLink>
+              <FooterLink to="/chatbot">{t("footer.biasDetector")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/watchlist">Real-time Watchlist</FooterLink>
+              <FooterLink to="/watchlist">{t("footer.watchlist")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/pricing">Pricing</FooterLink>
+              <FooterLink to="/pricing">{t("footer.pricing")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/features">All Features</FooterLink>
+              <FooterLink to="/features">{t("footer.allFeatures")}</FooterLink>
             </li>
           </ul>
         </div>
 
-        {/* Links Column 2: Company */}
         <div>
-          <h4 className="text-white font-semibold mb-4">Company</h4>
+          <h4 className="text-white font-semibold mb-4">{t("footer.company")}</h4>
           <ul className="space-y-2 text-sm text-muted">
             <li>
-              <FooterLink to="/about">About Us</FooterLink>
+              <FooterLink to="/about">{t("footer.about")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/careers">Careers</FooterLink>
+              <FooterLink to="/careers">{t("footer.careers")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/blog">Blog</FooterLink>
+              <FooterLink to="/blog">{t("footer.blog")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/contact">Contact</FooterLink>
+              <FooterLink to="/contact">{t("footer.contact")}</FooterLink>
             </li>
           </ul>
         </div>
 
-        {/* Links Column 3: Legal & Support */}
         <div>
-          <h4 className="text-white font-semibold mb-4">Support</h4>
+          <h4 className="text-white font-semibold mb-4">{t("footer.support")}</h4>
           <ul className="space-y-2 text-sm text-muted">
             <li>
-              <FooterLink to="/faq">FAQ</FooterLink>
+              <FooterLink to="/faq">{t("footer.faq")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/privacy">Privacy Policy</FooterLink>
+              <FooterLink to="/privacy">{t("footer.privacyPolicy")}</FooterLink>
             </li>
             <li>
-              <FooterLink to="/terms">Terms of Service</FooterLink>
+              <FooterLink to="/terms">{t("footer.terms")}</FooterLink>
             </li>
             <li>
               <a
@@ -93,30 +88,17 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Bar - INCREASED MARGIN TOP HERE (mt-24) */}
       <div className="container max-w-6xl mx-auto mt-48 pt-8 border-t border-[rgba(255,255,255,0.05)] flex flex-col md:flex-row justify-between items-center text-xs text-muted">
-        <p>&copy; {currentYear} MarketPulse Inc. All rights reserved.</p>
-        <p className="mt-2 md:mt-0">
-          Made for the National Bank Bias Detector Challenge.
-        </p>
+        <p>&copy; {currentYear} {t("footer.rights")}</p>
+        <p className="mt-2 md:mt-0">{t("footer.challengeLine")}</p>
       </div>
     </footer>
   );
 }
 
-// Sub-components
-function FooterLink({
-  to,
-  children,
-}: {
-  to: string;
-  children: React.ReactNode;
-}) {
+function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link
-      to={to}
-      className="hover:text-[#DC143C] transition-colors duration-200"
-    >
+    <Link to={to} className="hover:text-[#DC143C] transition-colors duration-200">
       {children}
     </Link>
   );
