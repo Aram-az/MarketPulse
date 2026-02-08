@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import Button from "../components/Button";
 import { Bell, LogOut, Settings, User as UserIcon } from "lucide-react";
 import "../index.css";
 
@@ -17,6 +16,9 @@ const NavBar = () => {
     { label: t("nav.news"), href: "/news" },
     { label: t("nav.watchlist"), href: "/watchlist" },
     { label: t("nav.markets"), href: "/market" },
+
+    // Added from Aram
+    { label: "Bias Detector", href: "/bias" },
   ];
 
   return (
@@ -111,8 +113,8 @@ const NavBar = () => {
               </div>
             </>
           ) : (
-            <Link to="/login">
-              <Button>{t("nav.login")}</Button>
+            <Link to="/login" className="text-sm text-gray-300 hover:text-white">
+              {t("nav.login")}
             </Link>
           )}
         </div>
