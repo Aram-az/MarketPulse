@@ -7,14 +7,16 @@ import StyleGuide from "./pages/StyleGuide";
 import AccountCreate from "./pages/accountCreate";
 import SettingsPage from "./pages/settingsPage";
 import WatchlistPage from "./pages/watchlistPage";
-
 import ChatBotPage from "./pages/ChatBotPage";
 import Footer from "./components/Footer";
 import MarketPage from "./pages/marketPage";
 import Dashboard from "./pages/Dashboard";
 import NewsPage from "./pages/NewsPage";
 import BiasDetectorPage from "./pages/biasDetectorPage";
+import TradeJournal from "./pages/TradeJournal";
+import ActionPlan from "./pages/ActionPlan";
 
+import { DataProvider } from "./context/DataContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./i18n";
 
@@ -40,22 +42,38 @@ function AppLayout() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/account/create" element={<AccountCreate />} />
-
           <Route path="/style" element={<StyleGuide />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/news" element={<NewsPage />} />
-
-          {/* Added from Aram */}
           <Route path="/bias" element={<BiasDetectorPage />} />
+          <Route
+            path="/action-plan"
+            element={
+              <ProtectedRoute>
+                <ActionPlan />
+              </ProtectedRoute>
+            }
+          />
 
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Added Trade Journal Route */}
+          <Route
+            path="/journal"
+            element={
+              <ProtectedRoute>
+                <TradeJournal />
               </ProtectedRoute>
             }
           />
@@ -69,7 +87,10 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppLayout />
+      {/* DataProvider must be INSIDE AuthProvider so it can persist per-session if needed */}
+      <DataProvider>
+        <AppLayout />
+      </DataProvider>
     </AuthProvider>
   );
 }
