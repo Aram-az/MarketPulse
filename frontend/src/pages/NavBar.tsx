@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import Button from "../components/Button";
 
 const links = [
-  { label: "ChatBot", href: "/home" },
-  { label: "About", href: "/about" },
+  { label: "ChatBot", href: "/chatbot" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "News", href: "/news" },
   { label: "Watchlist", href: "/watchlist" },
   { label: "Markets", href: "/markets" },
