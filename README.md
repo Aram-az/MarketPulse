@@ -13,9 +13,7 @@ A QHacks team project that analyzes a trader's transaction history and highlight
 
 ## My contribution
 
-I worked with a team during QHacks. My specific contributions were: **[list the components, functions, designs, integrations, or analysis you personally implemented]**.
-
-Other team contributions: **[credit teammates or link the original team repository, as agreed with the team]**.
+I contributed to the trade-bias analysis algorithm as part of the QHacks team. The project combines work from multiple contributors; see the [original team repository](https://github.com/Gavin-Tan1/MarketPulse) for the shared code and history.
 
 ## Stack
 
